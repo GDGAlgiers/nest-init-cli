@@ -34,4 +34,12 @@ private async readByLineAsyncAndUpdate(filePath:string,providerName:string,strin
     const fileData:string = await this.readByLineAsyncAndUpdate(filePath,providerName,"providers",providerPath)
     await writeFile(filePath, fileData);
   }
+
+  async addImportsToAppModule(providerPath: string, providerName: string) {
+    const filePath = process.cwd() + '/src/app.module.ts';
+
+
+    const fileData:string = await this.readByLineAsyncAndUpdate(filePath,providerName,"imports",providerPath)
+    await writeFile(filePath, fileData);
+  }
 }
