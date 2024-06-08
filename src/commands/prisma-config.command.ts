@@ -8,7 +8,7 @@ import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import readline from 'readline';
 import * as fs from 'fs';
-@Command({ name: 'install-prisma', description: 'Install Prisma' })
+@Command({ name: 'install-prisma', description: 'Install typeOrm' })
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
