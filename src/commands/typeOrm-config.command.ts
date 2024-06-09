@@ -27,7 +27,9 @@ export class TypeOrmConfigCommand extends CommandRunner {
         options?.flag === '-m' ||
         options?.flag === '--mongodb' ||
         options?.flag === '-psql' ||
-        options?.flag === '--postgresql'
+        options?.flag === '--postgresql'||
+        options?.flag === '-my' ||
+        options?.flag === '--mysql'
       ) {
         await this.installTypeOrmDependencies();
       } else {
@@ -63,7 +65,7 @@ TypeOrmModule.forRoot({
   useNewUrlParser: true,
   useUnifiedTopology: true,
   synchronize: true,
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+ autoLoadEntities: true,
 })
 `;
     await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
@@ -99,8 +101,9 @@ TypeOrmModule.forRoot({
   username: 'postgres',
   password: '20032003',
   database: 'me',
-  entities: [],
   synchronize: true,
+  autoLoadEntities: true, 
+
 })
 `;
     await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
@@ -108,7 +111,30 @@ TypeOrmModule.forRoot({
     console.log('TypeORM configured successfully');
     console.log('TypeORM with PostgreSQL configured successfully!');
   }
-
+  @Option({
+    flags: '-my, --mysql',
+    description: 'Configure TypeORM with MySQL',
+  })
+  async runWithMySQL() {
+    console.log('Configuring TypeORM with MySQL...');
+    const importTypeOrm = `import { TypeOrmModule } from '@nestjs/typeorm';`;
+    const typeOrmModule = `
+  TypeOrmModule.forRoot({
+    type: 'mysql',
+    host: 'localhost',
+    port: 3306,
+    username: 'root',
+    password: 'your_password',
+    database: 'your_database',
+    synchronize: true,
+    autoLoadEntities: true,
+  })
+  `;
+    await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
+    await this.packageManagerService.installDependency('mysql2');
+    console.log('TypeORM with MySQL configured successfully!');
+  }
+  
   private async installTypeOrmDependencies(): Promise<void> {
     const spinner = new Spinner('Installing TypeORM... %s');
     spinner.setSpinnerString('|/-\\');
