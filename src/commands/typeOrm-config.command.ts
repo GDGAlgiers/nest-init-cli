@@ -18,7 +18,7 @@ export class TypeOrmComfigCommand extends CommandRunner {
     ) {
         super();
     }
-    private readonly envFileContenu = `{
+    private  envFileContenu = `{
   "type": "${this.type}",
   "host": "localhost",
   "port": 5432,
@@ -31,6 +31,7 @@ export class TypeOrmComfigCommand extends CommandRunner {
     "migrationsDir": "src/migration"
   }
 }`
+  
       
         async run(
             passedParams: string[],
@@ -47,7 +48,7 @@ export class TypeOrmComfigCommand extends CommandRunner {
                 // this.installPrismaDependencies();
                 
                 await writeFile(
-                  join(process.cwd(), 'src', '.env'),
+                  join(process.cwd(), '', '.env'),
                   this.envFileContenu,
                 );
               
@@ -64,22 +65,27 @@ export class TypeOrmComfigCommand extends CommandRunner {
           }
           @Option({
             flags: '-m, --mongodb',
-            description: 'config prisma with mongo-db',
+            description: 'config typeOrm with mongo-db',
           })
-          runWithMongo() {
+        async runWithMongo() {
            
-            console.log('Configuring Prisma with MongoDB...');
+            console.log('Configuring type Orm with MongoDB...');
+            this.envFileContenu = `{
+              type: 'mongodb',
+              url: 'mongodb://localhost:27017/nest', // Your MongoDB connection string
+              useNewUrlParser: true,
+              useUnifiedTopology: true,
+              synchronize: true, // Set to false in production
+              entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            }`
+            await writeFile(
+              join(process.cwd(), '', '.env'),
+              this.envFileContenu,
+            );
+            console.log('type orm with mongo configured  successfully!');
+
           }
-          private async initPrisma(): Promise<void> {
-            exec('npx prisma init').on('exit', async () => {
-            //   await writeFile(
-            //     join(process.cwd(), 'prisma', 'schema.prisma'),
-            //     // this.schemaContent,
-            //   );
-            });
-            exec('npx prisma generate');
-            console.log('Prisma init successfully!');
-          }
+         
           private installPrismaDependencies(): void {
             const spinner = new Spinner('Installing Prisma... %s');
             spinner.setSpinnerString('|/-\\');

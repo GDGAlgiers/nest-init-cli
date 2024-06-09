@@ -126,7 +126,7 @@ export class PrismaConfigCommand extends CommandRunner {
     console.log('Prisma init successfully!');
   }
   private installPrismaDependencies(): void {
-    const spinner = new Spinner('Installing Prisma... %s');
+    const spinner = new Spinner('Installing type orm ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('prisma', true);
