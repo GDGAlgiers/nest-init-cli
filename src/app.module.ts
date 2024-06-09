@@ -8,6 +8,6 @@ import { FileManagerService } from './utils/fileManager.service';
 import { TypeOrmConfigCommand } from './commands/typeOrm-config.command';
 @Module({
 providers:[PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService],
-  imports: [CommandRunnerModule],
+imports:[    CommandRunnerModule],
 })
 export class AppModule {}
