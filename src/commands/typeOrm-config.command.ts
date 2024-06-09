@@ -68,7 +68,7 @@ TypeOrmModule.forRoot({
  autoLoadEntities: true,
 })
 `;
-    await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
+    await this.fileManagerService.addImportsToAppModule(importTypeOrm, typeOrmModule);
     await this.packageManagerService.installDependency('mongodb');
     console.log('TypeORM configured successfully');
     console.log('TypeORM with MongoDB configured successfully!');
@@ -106,7 +106,7 @@ TypeOrmModule.forRoot({
 
 })
 `;
-    await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
+    await this.fileManagerService.addImportsToAppModule(importTypeOrm, typeOrmModule);
     await this.packageManagerService.installDependency('pg');
     console.log('TypeORM configured successfully');
     console.log('TypeORM with PostgreSQL configured successfully!');
@@ -130,7 +130,7 @@ TypeOrmModule.forRoot({
     autoLoadEntities: true,
   })
   `;
-    await this.fileManagerService.addModuleToAppModule(importTypeOrm, typeOrmModule);
+    await this.fileManagerService.addImportsToAppModule(importTypeOrm, typeOrmModule);
     await this.packageManagerService.installDependency('mysql2');
     console.log('TypeORM with MySQL configured successfully!');
   }
