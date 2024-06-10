@@ -54,7 +54,6 @@ export class TypeOrmConfigCommand extends CommandRunner {
 // USE_NEW_URL_PARSER=true
 // USE_UNIFIED_TOPOLOGY=true
 // SYNCHRONIZE=true
-// ENTITIES=__dirname + '/**/*.entity{.ts,.js}'
 // `;
 //     await writeFile(join(process.cwd(), '.env'), this.envFileContent);
     const importTypeOrm = `import { TypeOrmModule } from '@nestjs/typeorm';`;
@@ -87,9 +86,7 @@ TypeOrmModule.forRoot({
 // USERNAME=user
 // PASSWORD=password
 // DATABASE=mydb
-// ENTITIES=dist/**/*.entity{.ts,.js}
-// MIGRATIONS=dist/migration/*.js
-// CLI_MIGRATIONS_DIR=src/migration
+
 // `;
 //     await writeFile(join(process.cwd(), '.env'), this.envFileContent);
     const importTypeOrm = `import { TypeOrmModule } from '@nestjs/typeorm';`;
