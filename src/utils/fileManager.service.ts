@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
-import { writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
 export class FileManagerService {
   
 private async readByLineAsyncAndUpdate(filePath:string,providerName:string,stringCheck:string,providerPath:string):Promise<string> {
@@ -41,5 +42,10 @@ private async readByLineAsyncAndUpdate(filePath:string,providerName:string,strin
 
     const fileData:string = await this.readByLineAsyncAndUpdate(filePath,providerName,"imports",providerPath)
     await writeFile(filePath, fileData);
+  }
+  async createDirectoryIfNotExists(path: string): Promise<void> {
+    if (!existsSync(path)) {
+      await mkdir(path, { recursive: true });
+    }
   }
 }

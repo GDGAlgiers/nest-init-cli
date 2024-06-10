@@ -8,7 +8,7 @@ import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import readline from 'readline';
 import * as fs from 'fs';
-@Command({ name: 'install-prisma', description: 'Install Prisma' })
+@Command({ name: 'install-prisma', description: 'Install prisma' })
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
@@ -126,7 +126,7 @@ export class PrismaConfigCommand extends CommandRunner {
     console.log('Prisma init successfully!');
   }
   private installPrismaDependencies(): void {
-    const spinner = new Spinner('Installing Prisma... %s');
+    const spinner = new Spinner('Installing type orm ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('prisma', true);
