@@ -49,6 +49,8 @@ export class TypeOrmConfigCommand extends CommandRunner {
   async runWithMongo() {
     console.log('Configuring TypeORM with MongoDB...');
     await this.packageManagerService.installDependency('mongodb');
+    await this.packageManagerService.installDependency('@nestjs/mongoose');
+    await this.packageManagerService.installDependency('mongoose');
     await this.createDatasourceModule("-m");
     console.log('TypeORM with MongoDB configured successfully!');
   }
@@ -97,22 +99,21 @@ export class TypeOrmConfigCommand extends CommandRunner {
     if (flag === '-m' || flag === '--mongodb') {
       filename = 'typeorm.mongodb.module.ts';
       moduleContent = `
-        import { Module } from '@nestjs/common';
-        import { TypeOrmModule } from '@nestjs/typeorm';
-  
+       /* eslint-disable prettier/prettier */
+
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+   
         @Module({
           imports: [
-            TypeOrmModule.forRoot({
-              type: 'mongodb',
-              host: 'localhost',
-              port: 27017,
-              database: 'your_mongodb_database',
-              autoLoadEntities: true,
-              synchronize: true,
-            }),
+            MongooseModule.forRoot('mongodb://127.0.0.1:27017/nest', {
+            
+            }),  
+           
           ],
         })
         export class TypeOrmMongoModule {}
+      
       `;
     } else if (flag === '-psql' || flag === '--postgresql') {
       filename = 'typeorm.postgresql.module.ts';
