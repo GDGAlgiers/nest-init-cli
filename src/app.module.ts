@@ -1,4 +1,3 @@
-import { KnexPostgresModule } from './datasource/knex.postgresql.module';
     /* eslint-disable prettier/prettier */
  import { Module } from '@nestjs/common';
 import { CommandRunnerModule } from 'nest-commander';
@@ -9,6 +8,6 @@ import { TypeOrmConfigCommand } from './commands/typeOrm-config.command';
 import { KnexOrmConfigCommand } from './commands/knexOrm-config.command';
 @Module({
 providers:[PrismaConfigCommand,TypeOrmConfigCommand,KnexOrmConfigCommand, PackageManagerService, FileManagerService],
-imports:[KnexPostgresModule,   CommandRunnerModule,],
+imports:[ CommandRunnerModule,],
 })
 export class AppModule {}

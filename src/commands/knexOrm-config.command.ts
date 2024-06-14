@@ -23,8 +23,6 @@ export class KnexOrmConfigCommand extends CommandRunner {
       try {
         if (
           !options?.flag ||
-          options?.flag === '-m' ||
-          options?.flag === '--mongodb' ||
           options?.flag === '-psql' ||
           options?.flag === '--postgresql' ||
           options?.flag === '-my' ||
@@ -40,18 +38,6 @@ export class KnexOrmConfigCommand extends CommandRunner {
       } catch (err) {
         console.error(err);
       }
-    }
-  
-    @Option({
-      flags: '-m, --mongodb',
-      description: 'Configure Knex ORm  with MongoDB',
-    })
-    async runWithMongo() {
-      console.log('Configuring Knex ORm  with MongoDB...');
-      await this.packageManagerService.installDependency('mongodb');
-      await this.packageManagerService.installDependency('@nestjs/mongoose');
-      await this.packageManagerService.installDependency('mongoose');
-      console.log('Knex ORm  with MongoDB configured successfully!');
     }
   
     @Option({
@@ -73,14 +59,15 @@ export class KnexOrmConfigCommand extends CommandRunner {
     async runWithMySQL() {
       console.log('Configuring Knex ORm  with MySQL...');
       await this.packageManagerService.installDependency('mysql2');  
+      await this.createKnexMySQLModule("-my");
       console.log('Knex ORm with MySQL configured successfully!');
     }
   
     private async installKnexORmDependencies(): Promise<void> {
-      const spinner = new Spinner('Installing knex... %s');
+      const spinner = new Spinner('Installing knex... %s\n');
       spinner.setSpinnerString('|/-\\');
       spinner.start();
-      await this.packageManagerService.installDependency('knex', true);
+      await this.packageManagerService.installDependency('knex');
       await this.packageManagerService.installDependency('@nestjs/typeorm');
       spinner.stop(true);
       console.log('Knex ORm  installed successfully!');
@@ -97,8 +84,7 @@ export class KnexOrmConfigCommand extends CommandRunner {
       
         if (flag === '-psql' || flag === '--postgresql') {
           filename = 'knex.postgresql.module.ts';
-          moduleContent = `
-          import * as Knex from 'knex';
+          moduleContent = `import * as Knex from 'knex';
 import { Module } from '@nestjs/common';
 
 export const knexProvider = {
@@ -150,15 +136,72 @@ export class KnexPostgresModule {}
       }
       
   
+    private async createKnexMySQLModule(flag: string): Promise<void> {
+      const datasourcePath = join(process.cwd(), 'src', 'datasource');
+      await this.fileManagerService.createDirectoryIfNotExists(datasourcePath);
+    
+      let moduleContent = '';
+      let filename = '';
+    
+      if (flag === '-my' || flag === '--mysql') {
+        filename = 'knex.mysql.module.ts';
+        moduleContent = `import * as Knex from 'knex';
+          import { Module } from '@nestjs/common';
+          
+          export const knexProvider = {
+            provide: 'KnexConnection',
+            useFactory: async () => {
+              const knexConnection = Knex({
+                client: 'mysql2',
+                connection: {
+                  host: 'localhost',
+                  port: 3306,
+                  user: 'your_mysql_username',
+                  password: 'your_mysql_password',
+                  database: 'your_mysql_database',
+                },
+              });
+          
+              try {
+                await knexConnection.raw('SELECT 1'); // Test connection
+                console.log('Knex connected to MySQL database successfully');
+              } catch (error) {
+                console.error('Error connecting to MySQL database:', error);
+                throw error;
+              }
+          
+              return knexConnection;
+            },
+          };
+          
+          @Module({
+            providers: [knexProvider],
+            exports: ['KnexConnection'],
+          })
+          export class KnexORmMySqlModule {}
+        `;
+      }
+    
+      try {
+        console.log('Datasource Path:', datasourcePath);
+        const filePath = join(datasourcePath, filename);
+        await writeFile(filePath, moduleContent);
+        console.log(`Created ${filename} in src`);
+      } catch (err) {
+        console.error(`Failed to create ${filename}:`, err);
+      }
+    
+      const importStatement = `import { ${this.getModuleName(flag)} } from './datasource/${filename.replace('.ts', '')}';`;
+      const moduleClass = `${this.getModuleName(flag)}`;
+      await this.fileManagerService.addImportsToAppModule(importStatement, moduleClass);
+    }
+  
     private getModuleName(flag: string): string {
-      if (flag === '-m' || flag === '--mongodb') {
-        return 'knexOrmMongoModule';
-      } else if (flag === '-psql' || flag === '--postgresql') {
+    if (flag === '-psql' || flag === '--postgresql') {
         return 'KnexPostgresModule';
       } else if (flag === '-my' || flag === '--mysql') {
         return 'KnexORmMySqlModule';
       }
       return '';
     }
-  }
-  
+}
