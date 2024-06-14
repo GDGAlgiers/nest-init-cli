@@ -5,6 +5,7 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { writeFile } from 'fs/promises';
+import { ConfigService } from 'nestjs-config';
 
 @Command({ name: 'install-typeOrm', description: 'Install TypeORM' })
 export class TypeOrmConfigCommand extends CommandRunner {
@@ -12,6 +13,7 @@ export class TypeOrmConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
     private readonly fileManagerService: FileManagerService,
+
   ) {
     super();
   }
@@ -50,6 +52,7 @@ export class TypeOrmConfigCommand extends CommandRunner {
     console.log('Configuring TypeORM with MongoDB...');
     await this.packageManagerService.installDependency('mongodb');
     await this.packageManagerService.installDependency('@nestjs/mongoose');
+    await this.packageManagerService.installDependency('@nestjs/config');
     await this.packageManagerService.installDependency('mongoose');
     await this.createDatasourceModule("-m");
     console.log('TypeORM with MongoDB configured successfully!');
@@ -98,23 +101,27 @@ export class TypeOrmConfigCommand extends CommandRunner {
   
     if (flag === '-m' || flag === '--mongodb') {
       filename = 'typeorm.mongodb.module.ts';
-      moduleContent = `
-       /* eslint-disable prettier/prettier */
-
+      moduleContent = `/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // Add the configuration module
 import { MongooseModule } from '@nestjs/mongoose';
-   
-        @Module({
-          imports: [
-            MongooseModule.forRoot('mongodb://127.0.0.1:27017/nest', {
-            
-            }),  
-           
-          ],
-        })
-        export class TypeOrmMongoModule {}
-      
-      `;
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(), // Register ConfigModule to access environment variables
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'), // Read MongoDB URI from environment variable
+      }),
+    }),
+  ],
+})
+export class TypeOrmMongoModule {}
+`;
+console.log("please add mongo uri in env file like:MONGODB_URI=mongodb://127.0.0.1:27017/test");
+
     } else if (flag === '-psql' || flag === '--postgresql') {
       filename = 'typeorm.postgresql.module.ts';
       moduleContent = `
