@@ -5,7 +5,7 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { writeFile } from 'fs/promises';
-import { typeOrmMongoModuleContent, typeOrmMySqlModuleContent } from 'src/module-content/typeORm.content';
+import { typeOrmMongoModuleContent, typeOrmMySqlModuleContent, typeOrmPostgresModuleContent } from 'src/module-content/typeORm.content';
 
 @Command({ name: 'install-typeOrm', description: 'Install TypeORM' })
 export class TypeOrmConfigCommand extends CommandRunner {
@@ -106,7 +106,7 @@ console.log("please add mongo uri in env file like:MONGODB_URI=mongodb://127.0.0
 
     } else if (flag === '-psql' || flag === '--postgresql') {
       filename = 'typeorm.postgresql.module.ts';
-      moduleContent = typeOrmMySqlModuleContent
+      moduleContent = typeOrmPostgresModuleContent
     } else if (flag === '-my' || flag === '--mysql') {
       filename = 'typeorm.mysql.module.ts';
       moduleContent = typeOrmMySqlModuleContent
