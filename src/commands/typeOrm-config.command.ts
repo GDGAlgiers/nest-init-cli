@@ -5,6 +5,7 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { writeFile } from 'fs/promises';
+import { typeOrmMongoModuleContent, typeOrmMySqlModuleContent, typeOrmPostgresModuleContent } from 'src/module-content/typeORm.content';
 
 @Command({ name: 'install-typeOrm', description: 'Install TypeORM' })
 export class TypeOrmConfigCommand extends CommandRunner {
@@ -12,6 +13,7 @@ export class TypeOrmConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
     private readonly fileManagerService: FileManagerService,
+
   ) {
     super();
   }
@@ -49,6 +51,9 @@ export class TypeOrmConfigCommand extends CommandRunner {
   async runWithMongo() {
     console.log('Configuring TypeORM with MongoDB...');
     await this.packageManagerService.installDependency('mongodb');
+    await this.packageManagerService.installDependency('@nestjs/mongoose');
+    await this.packageManagerService.installDependency('@nestjs/config');
+    await this.packageManagerService.installDependency('mongoose');
     await this.createDatasourceModule("-m");
     console.log('TypeORM with MongoDB configured successfully!');
   }
@@ -96,85 +101,15 @@ export class TypeOrmConfigCommand extends CommandRunner {
   
     if (flag === '-m' || flag === '--mongodb') {
       filename = 'typeorm.mongodb.module.ts';
-      moduleContent = `
-        import { Module } from '@nestjs/common';
-        import { TypeOrmModule } from '@nestjs/typeorm';
-  
-        @Module({
-          imports: [
-            TypeOrmModule.forRoot({
-              type: 'mongodb',
-              host: 'localhost',
-              port: 27017,
-              database: 'your_mongodb_database',
-              autoLoadEntities: true,
-              synchronize: true,
-            }),
-          ],
-        })
-        export class TypeOrmMongoModule {}
-      `;
+      moduleContent =typeOrmMongoModuleContent
+console.log("please add mongo uri in env file like:MONGODB_URI=mongodb://127.0.0.1:27017/test");
+
     } else if (flag === '-psql' || flag === '--postgresql') {
       filename = 'typeorm.postgresql.module.ts';
-      moduleContent = `
-       import { DataSource } from 'typeorm';
-import { Global, Module } from '@nestjs/common';
-
-@Global() // makes the module available globally for other modules once imported in the app modules
-@Module({
-  imports: [],
-  providers: [
-    {
-      provide: DataSource, // add the datasource as a provider
-      inject: [],
-      useFactory: async () => {
-        // using the factory function to create the datasource instance
-        try {
-          const dataSource = new DataSource({
-            type: 'postgres',
-            host: 'localhost',
-            port: 5432,
-            username: 'postgres',
-            password: '20032003',
-            database: 'test',
-            synchronize: true,
-          });
-          await dataSource.initialize(); // initialize the data source
-          console.log('Database connected successfully');
-          return dataSource;
-        } catch (error) {
-          console.log('Error connecting to database');
-          throw error;
-        }
-      },
-    },
-  ],
-  exports: [DataSource],
-})
-export class TypeOrmPostgresModule {}
-      `;
+      moduleContent = typeOrmPostgresModuleContent
     } else if (flag === '-my' || flag === '--mysql') {
       filename = 'typeorm.mysql.module.ts';
-      moduleContent = `
-        import { Module } from '@nestjs/common';
-        import { TypeOrmModule } from '@nestjs/typeorm';
-  
-        @Module({
-          imports: [
-            TypeOrmModule.forRoot({
-              type: 'mysql',
-              host: 'localhost',
-              port: 3306,
-              username: 'your_mysql_username',
-              password: 'your_mysql_password',
-              database: 'your_mysql_database',
-              autoLoadEntities: true,
-              synchronize: true,
-            }),
-          ],
-        })
-        export class TypeOrmMySqlModule {}
-      `;
+      moduleContent = typeOrmMySqlModuleContent
     }
   
     try {
