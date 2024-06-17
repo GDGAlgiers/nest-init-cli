@@ -24,10 +24,20 @@ export class PackageManagerService {
     
     return 'unknown';
   }
-
-  async installDependency(dependency: string, dev = false) {
+  async installDependency(dependency: string, dev = false): Promise<void> {
     const packageManager = await this.detectPackageManager();
     const command = `${packageManager} add ${dependency} ${dev ? '--save-dev' : ''}`;
-    exec(command);
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error installing ${dependency}:`, stderr);
+          reject(new Error(`Error installing ${dependency}: ${stderr}`));
+        } else {
+          console.log(`${dependency} installed successfully:`, stdout);
+          resolve();
+        }
+      });
+    });
   }
+  
 }
