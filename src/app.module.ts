@@ -9,6 +9,7 @@ import { SequelizeConfigCommand } from './commands/sequelize-config.command';
 import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
 @Module({
   providers: [
+    SequelizeConfigCommand,
     MikroOrmConfigCommand,
     PrismaConfigCommand,
     TypeOrmConfigCommand,
