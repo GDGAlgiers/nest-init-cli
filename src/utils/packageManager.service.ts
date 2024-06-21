@@ -1,11 +1,13 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
-// import * as path from 'path';
 import * as fs from 'fs';
+import { asyncExecuteCommand } from './asyncExecuteCommand';
 
 @Injectable()
 export class PackageManagerService {
+  private dependencyQueue: { dependency: string; dev: boolean }[] = [];
+  private isInstalling = false;
+
   private async detectPackageManager(): Promise<string> {
     const files = await fs.promises.readdir(process.cwd());
     const hasNpmLockFile = files.includes('package-lock.json');
@@ -26,8 +28,28 @@ export class PackageManagerService {
   }
 
   async installDependency(dependency: string, dev = false) {
-    const packageManager = await this.detectPackageManager();
-    const command = `${packageManager} add ${dependency} ${dev ? '--save-dev' : ''}`;
-    exec(command);
+    this.dependencyQueue.push({ dependency, dev });
+
+    if (!this.isInstalling) {
+        this.isInstalling = true;
+        await this.processQueue();
+    }
+  }
+
+  private async processQueue() {
+    try {
+        const packageManager = await this.detectPackageManager();
+
+        while (this.dependencyQueue.length > 0) {
+            const { dependency, dev } = this.dependencyQueue.shift()!;
+            const command = `${packageManager} add ${dependency} ${dev ? '--save-dev' : ''}`;
+            await asyncExecuteCommand(command);
+            // console.log(`${dependency} installed successfully.`);
+        }
+    } catch (error) {
+        console.error(`Failed to install dependencies:`, error);
+    } finally {
+        this.isInstalling = false;
+    }
   }
 }
