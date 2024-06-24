@@ -2,10 +2,10 @@
 import { Command, CommandRunner } from 'nest-commander';
 import { Spinner } from 'cli-spinner';
 import { join } from 'path';
+import { prompt } from 'inquirer';
+import { writeFile } from 'fs/promises';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
-import { writeFile } from 'fs/promises';
-import { prompt } from 'inquirer';
 
 @Command({ name: 'add-auth', description: 'add auth services' })
 export class AuthConfigCommand extends CommandRunner {
@@ -17,11 +17,17 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   async run(passedParams: string[]): Promise<void> {
-
     const spinner = new Spinner('Processing.. %s');
-    
+    spinner.setSpinnerString('|/-\\');
 
     try {
+      // Start the spinner
+    //   spinner.start();
+
+      // Check if the user folder exists
+      const folderExists = await this.fileManagerService.doesUserFolderExist();
+      console.log(`User folder exists: ${folderExists}`);
+
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
@@ -63,8 +69,6 @@ export class AuthConfigCommand extends CommandRunner {
       }
 
       // Example of using the services and fs/promises
-      spinner.setSpinnerString('|/-\\');
-      spinner.start();
       const path = join(__dirname, 'path-to-file');
       const content = 'File content here';
 
@@ -72,11 +76,12 @@ export class AuthConfigCommand extends CommandRunner {
 
       // Example of using PackageManagerService and FileManagerService
 
-      spinner.stop(true);
       console.log('Auth services added successfully');
     } catch (error) {
-      spinner.stop(true);
       console.error('Error while adding auth services:', error);
+    } finally {
+      // Stop the spinner
+      spinner.stop(true);
     }
   }
 }
