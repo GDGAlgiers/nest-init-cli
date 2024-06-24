@@ -46,7 +46,8 @@ export class AuthConfigCommand extends CommandRunner {
           });
         });
       }
-     this.installDependencies();
+    await this.installDependencies();
+    await this.initauth();
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
@@ -120,11 +121,15 @@ export class AuthConfigCommand extends CommandRunner {
     const spinner = new Spinner('Installing dependencies  ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
-    // this.packageManagerService.installDependency('@types/passport-local', true);
-    // this.packageManagerService.installDependency('passport-local');
-    this.packageManagerService.installDependency('passport ');
+    this.packageManagerService.installDependency('passport');
     this.packageManagerService.installDependency('@nestjs/passport');
     spinner.stop(true);
     console.log('Prisma installed successfully!');
+  }
+  private initauth(): void {
+    console.log('Initializing authentication service and module.');
+    
+    exec('npx nest g module auth')
+    exec('npx nest g service auth')
   }
 }
