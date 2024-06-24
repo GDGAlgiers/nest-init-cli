@@ -66,6 +66,7 @@ export class AuthConfigCommand extends CommandRunner {
         if (authType === 'JWT') {
             this.packageManagerService.installDependency('@nestjs/jwt');
             this.packageManagerService.installDependency('passport-jwt');
+            this.packageManagerService.installDependency('jsonwebtoken');
           } else if (authType === 'Cookies' || authType === 'Session') {
             this.packageManagerService.installDependency('passport-local');
           }
