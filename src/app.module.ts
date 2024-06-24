@@ -8,8 +8,9 @@ import { TypeOrmConfigCommand } from './commands/typeOrm-config.command';
 import { MongooseConfigCommand } from './commands/mongoose-config.command';
 import { CommandExecutionService } from './utils/commandExecutionService.service';
 import { SequelizeConfigCommand } from './commands/sequelize-config.command';
+import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
 @Module({
-providers:[SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, MongooseConfigCommand,PackageManagerService,CommandExecutionService, FileManagerService],
+providers:[SequelizeConfigCommand, MikroOrmConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, MongooseConfigCommand,PackageManagerService,CommandExecutionService, FileManagerService],
 imports:[ CommandRunnerModule],
 })
 export class AppModule {}
