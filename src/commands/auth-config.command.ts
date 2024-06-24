@@ -46,7 +46,7 @@ export class AuthConfigCommand extends CommandRunner {
           });
         });
       }
-
+     this.installDependencies();
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
@@ -60,9 +60,16 @@ export class AuthConfigCommand extends CommandRunner {
           message: 'Choose auth type:',
           choices: ['JWT', 'Cookies', 'Session'],
         });
-
+           
         // Process based on the selected auth type
         console.log(`Selected auth type: ${authType}`);
+        if (authType === 'JWT') {
+            this.packageManagerService.installDependency('@nestjs/jwt');
+            this.packageManagerService.installDependency('passport-jwt');
+          } else if (authType === 'Cookies' || authType === 'Session') {
+            this.packageManagerService.installDependency('passport-local');
+          }
+        
       }
 
       const { addGoogleAuth } = await prompt({
@@ -74,6 +81,8 @@ export class AuthConfigCommand extends CommandRunner {
       if (addGoogleAuth) {
         console.log('Adding Google auth...');
         // Process Google auth setup
+        this.packageManagerService.installDependency('passport-google-oauth20');
+
       }
 
       const { addFbAuth } = await prompt({
@@ -85,6 +94,8 @@ export class AuthConfigCommand extends CommandRunner {
       if (addFbAuth) {
         console.log('Adding Facebook auth...');
         // Process Facebook auth setup
+        this.packageManagerService.installDependency('passport-facebook');
+
       }
 
       // Example of using the services and fs/promises
@@ -103,5 +114,16 @@ export class AuthConfigCommand extends CommandRunner {
       // Stop the spinner
       spinner.stop(true);
     }
+  }
+  private installDependencies(): void {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
+    // this.packageManagerService.installDependency('@types/passport-local', true);
+    // this.packageManagerService.installDependency('passport-local');
+    this.packageManagerService.installDependency('passport ');
+    this.packageManagerService.installDependency('@nestjs/passport');
+    spinner.stop(true);
+    console.log('Prisma installed successfully!');
   }
 }
