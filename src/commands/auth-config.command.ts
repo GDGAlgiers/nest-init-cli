@@ -2,10 +2,11 @@
 import { Command, CommandRunner } from 'nest-commander';
 import { Spinner } from 'cli-spinner';
 import { join } from 'path';
+import { prompt } from 'inquirer';
+import { writeFile } from 'fs/promises';
+import { exec } from 'child_process';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
-import { writeFile } from 'fs/promises';
-import { prompt } from 'inquirer';
 
 @Command({ name: 'add-auth', description: 'add auth services' })
 export class AuthConfigCommand extends CommandRunner {
@@ -17,11 +18,36 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   async run(passedParams: string[]): Promise<void> {
-
     const spinner = new Spinner('Processing.. %s');
-    
+    spinner.setSpinnerString('|/-\\');
 
     try {
+      // Check if the user folder exists
+      const folderExists = await this.fileManagerService.doesUserFolderExist();
+      console.log(`User folder exists: ${folderExists}`);
+      
+      if (!folderExists) {
+        console.log('User folder does not exist. Generating user resource...');
+        
+        await new Promise<void>((resolve, reject) => {
+          exec('npx nest g resource user', (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Error generating user resource: ${error.message}`);
+              reject(error);
+              return
+            }
+            if (stderr) {
+              console.error(`Error output: ${stderr}`);
+              reject(new Error(stderr));
+              return;
+            }
+            console.log(`User resource generated: ${stdout}`);
+            resolve();
+          });
+        });
+      }
+    await this.installDependencies();
+    await this.initauth();
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
@@ -35,9 +61,17 @@ export class AuthConfigCommand extends CommandRunner {
           message: 'Choose auth type:',
           choices: ['JWT', 'Cookies', 'Session'],
         });
-
+           
         // Process based on the selected auth type
         console.log(`Selected auth type: ${authType}`);
+        if (authType === 'JWT') {
+            this.packageManagerService.installDependency('@nestjs/jwt');
+            this.packageManagerService.installDependency('passport-jwt');
+            this.packageManagerService.installDependency('jsonwebtoken');
+          } else if (authType === 'Cookies' || authType === 'Session') {
+            this.packageManagerService.installDependency('passport-local');
+          }
+        
       }
 
       const { addGoogleAuth } = await prompt({
@@ -49,6 +83,8 @@ export class AuthConfigCommand extends CommandRunner {
       if (addGoogleAuth) {
         console.log('Adding Google auth...');
         // Process Google auth setup
+        this.packageManagerService.installDependency('passport-google-oauth20');
+
       }
 
       const { addFbAuth } = await prompt({
@@ -60,10 +96,11 @@ export class AuthConfigCommand extends CommandRunner {
       if (addFbAuth) {
         console.log('Adding Facebook auth...');
         // Process Facebook auth setup
+        this.packageManagerService.installDependency('passport-facebook');
+
       }
 
       // Example of using the services and fs/promises
-      spinner.setSpinnerString('|/-\\');
       spinner.start();
       const path = join(__dirname, 'path-to-file');
       const content = 'File content here';
@@ -72,11 +109,27 @@ export class AuthConfigCommand extends CommandRunner {
 
       // Example of using PackageManagerService and FileManagerService
 
-      spinner.stop(true);
       console.log('Auth services added successfully');
     } catch (error) {
-      spinner.stop(true);
       console.error('Error while adding auth services:', error);
+    } finally {
+      // Stop the spinner
+      spinner.stop(true);
     }
+  }
+  private installDependencies(): void {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
+    this.packageManagerService.installDependency('passport');
+    this.packageManagerService.installDependency('@nestjs/passport');
+    spinner.stop(true);
+    console.log('Prisma installed successfully!');
+  }
+  private initauth(): void {
+    console.log('Initializing authentication service and module.');
+    
+    exec('npx nest g module auth')
+    exec('npx nest g service auth')
   }
 }
