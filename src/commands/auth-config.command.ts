@@ -4,6 +4,7 @@ import { Spinner } from 'cli-spinner';
 import { join } from 'path';
 import { prompt } from 'inquirer';
 import { writeFile } from 'fs/promises';
+import { exec } from 'child_process';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 
@@ -21,12 +22,30 @@ export class AuthConfigCommand extends CommandRunner {
     spinner.setSpinnerString('|/-\\');
 
     try {
-      // Start the spinner
-    //   spinner.start();
-
       // Check if the user folder exists
       const folderExists = await this.fileManagerService.doesUserFolderExist();
       console.log(`User folder exists: ${folderExists}`);
+      
+      if (!folderExists) {
+        console.log('User folder does not exist. Generating user resource...');
+        
+        await new Promise<void>((resolve, reject) => {
+          exec('npx nest g resource user', (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Error generating user resource: ${error.message}`);
+              reject(error);
+              return
+            }
+            if (stderr) {
+              console.error(`Error output: ${stderr}`);
+              reject(new Error(stderr));
+              return;
+            }
+            console.log(`User resource generated: ${stdout}`);
+            resolve();
+          });
+        });
+      }
 
       const { addAuth } = await prompt({
         type: 'confirm',
@@ -69,6 +88,7 @@ export class AuthConfigCommand extends CommandRunner {
       }
 
       // Example of using the services and fs/promises
+      spinner.start();
       const path = join(__dirname, 'path-to-file');
       const content = 'File content here';
 
