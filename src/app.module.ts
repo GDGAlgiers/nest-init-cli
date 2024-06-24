@@ -6,8 +6,9 @@ import { PackageManagerService } from './utils/packageManager.service';
 import { FileManagerService } from './utils/fileManager.service';
 import { TypeOrmConfigCommand } from './commands/typeOrm-config.command';
 import { SequelizeConfigCommand } from './commands/sequelize-config.command';
+import { AuthConfigCommand } from './commands/auth-config.command';
 @Module({
-providers:[SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService],
+providers:[AuthConfigCommand,SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService],
 imports:[ CommandRunnerModule,],
 })
 export class AppModule {}
