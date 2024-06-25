@@ -81,7 +81,9 @@ export class AuthConfigCommand extends CommandRunner {
           await this.packageManagerService.installDependency('bcryptjs');
           await this.jwt.addJwtStrategy();
           await this.fileManager.addProviderToAuthModule(`import { JwtStrategy } from './jwt.strategy';`,"JwtStrategy")
-          await this.fileManager.addImportsToAuthModule(`import { JwtModule } from '@nestjs/jwt';`,`JwtModule.register({ secret: process.env.JWT_SECRET||"2024",})`)
+          await this.fileManager.addImportsToAuthModule(`import { JwtModule } from '@nestjs/jwt';`,`JwtModule.register({ secret: process.env.JWT_SECRET||"2024",})`);
+          console.log("you should fixe user services to use jwt strategy");
+          
           authSpinner.stop(true);
         }
 

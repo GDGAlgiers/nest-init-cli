@@ -1,4 +1,5 @@
- /* eslint-disable prettier/prettier */
+import { AuthModule } from './auth/auth.module';
+  /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { CommandRunnerModule } from 'nest-commander';
 import { PrismaConfigCommand } from './commands/prisma-config.command';
@@ -15,7 +16,7 @@ import { FileManager } from './authStrategyMethods/utils/fileManager';
 
 @Module({
 providers:[AuthFileManager,AuthConfigCommand,SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService,FileManager,AppService],
-imports:[ CommandRunnerModule, UsersModule,],
+imports:[AuthModule,  CommandRunnerModule, UsersModule,],
 controllers: [AppController],
 })
 export class AppModule {}
