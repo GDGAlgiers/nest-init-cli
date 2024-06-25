@@ -57,8 +57,8 @@ export class AppController {
   }
   @Post('auth/register')
   async register(@Body() body) {
-    const { username, password } = body;
-    return this.authService.register(username, password);
+    const { email, password } = body;
+    return this.authService.register(email, password);
   }
   @UseGuards(AuthGuard('jwt'))
     @Get('profile')
@@ -102,8 +102,8 @@ export class AppController {
             private jwtService: JwtService,
           ) {}
         
-          async validateUser(username: string, pass: string): Promise<any> {
-            const user = await this.usersService.findOne(username);
+          async validateUser(email: string, pass: string): Promise<any> {
+            const user = await this.usersService.findOne(email);
             if (user && await bcrypt.compare(pass, user.password)) {
               const { password, ...result } = user;
               return result;
@@ -112,16 +112,16 @@ export class AppController {
           }
         
           async login(user: any) {
-            const payload = { username: user.username, sub: user.id };
+            const payload = { email: user.email, sub: user.id };
             return {
               access_token: this.jwtService.sign(payload),
             };
           }
         
-          async register(username: string, pass: string) {
+          async register(email: string, pass: string) {
             const hashedPassword = await bcrypt.hash(pass, 10);
-            const user = await this.usersService.create({ username, password: hashedPassword });
-            const payload = { username: user.username, sub: user.userId };
+            const user = await this.usersService.create({ email, password: hashedPassword });
+            const payload = { email: user.email, sub: user.userId };
             return {
               access_token: this.jwtService.sign(payload),
             };
@@ -139,11 +139,12 @@ import { AuthService } from './auth.service';
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
-    super();
+    super({ usernameField: 'email' }); // Specify email as the username field
   }
 
-  async validate(username: string, password: string): Promise<any> {
-    const user = await this.authService.validateUser(username, password);
+  async validate(email: string, password: string): Promise<any> {
+    
+    const user = await this.authService.validateUser(email, password);
     if (!user) {
       throw new UnauthorizedException();
     }
@@ -188,7 +189,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, username: payload.username };
+    return { userId: payload.sub, email: payload.email };
   }
 }
 `;
