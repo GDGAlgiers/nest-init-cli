@@ -73,6 +73,8 @@ export class AuthConfigCommand extends CommandRunner {
         authSpinner.start();
 
         await this.packageManagerService.installDependency('passport-local');
+        await this.packageManagerService.installDependency('nodemailer');
+        await this.packageManagerService.installDependency('@nestjs-modules/mailer');
 
         if (authType === 'JWT') {
           await this.packageManagerService.installDependency('@nestjs/jwt');
@@ -82,6 +84,9 @@ export class AuthConfigCommand extends CommandRunner {
           await this.jwt.addJwtStrategy();
           await this.fileManager.addProviderToAuthModule(`import { JwtStrategy } from './jwt.strategy';`,"JwtStrategy")
           await this.fileManager.addImportsToAuthModule(`import { JwtModule } from '@nestjs/jwt';`,`JwtModule.register({ secret: process.env.JWT_SECRET||"2024",})`);
+          await  this.fileManagerService.addImportsToAppModule(`import { MailModule } from './auth/email.module';`,`MailModule`);
+          await  this.fileManagerService.addImportsToAppModule(`import { ConfigModule } from '@nestjs/config';`,`ConfigModule.forRoot()`);
+
           console.log("you should fixe user services to use jwt strategy");
           
           authSpinner.stop(true);
