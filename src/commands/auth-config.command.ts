@@ -112,9 +112,10 @@ export class AuthConfigCommand extends CommandRunner {
       console.log('Auth services added successfully');
     } catch (error) {
       console.error('Error while adding auth services:', error);
+    } finally {
+      // Stop the spinner
     }
   }
-
   private installDependencies(): void {
     const spinner = new Spinner('Installing dependencies  ... %s');
     spinner.setSpinnerString('|/-\\');
