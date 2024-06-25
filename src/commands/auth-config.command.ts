@@ -124,7 +124,7 @@ export class AuthConfigCommand extends CommandRunner {
     this.packageManagerService.installDependency('passport');
     this.packageManagerService.installDependency('@nestjs/passport');
     spinner.stop(true);
-    console.log('Prisma installed successfully!');
+    console.log('passport js installed successfully!');
   }
   private initauth(): void {
     console.log('Initializing authentication service and module.');

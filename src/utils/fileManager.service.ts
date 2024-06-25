@@ -1,6 +1,8 @@
 /* eslint-disable prettier/prettier */
 import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 export class FileManagerService {
   
 private async readByLineAsyncAndUpdate(filePath:string,providerName:string,stringCheck:string,providerPath:string):Promise<string> {
@@ -46,6 +48,19 @@ private async readByLineAsyncAndUpdate(filePath:string,providerName:string,strin
   async createDirectoryIfNotExists(path: string): Promise<void> {
     if (!existsSync(path)) {
       await mkdir(path, { recursive: true });
+    }
+  }
+  async doesUserFolderExist(): Promise<boolean> {
+    const folderPath = join(__dirname, '..', 'user');
+  console.log(folderPath);
+  
+    // Check if the folder exists
+    if (existsSync(folderPath)) {
+      console.log("Folder exists");
+      return true;
+    } else {
+      console.log("Folder does not exist");
+      return false;
     }
   }
 }
