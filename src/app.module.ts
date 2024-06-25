@@ -1,5 +1,5 @@
-import { AuthModule } from './auth/auth.module';
 /* eslint-disable prettier/prettier */
+import { AuthModule } from './auth/auth.module';
 import { Module } from '@nestjs/common';
 import { CommandRunnerModule } from 'nest-commander';
 import { PrismaConfigCommand } from './commands/prisma-config.command';
