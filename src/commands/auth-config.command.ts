@@ -122,10 +122,10 @@ export class AuthConfigCommand extends CommandRunner {
 
       if (addGithubAuth) {
         console.log('Adding Githb auth...');
-        await    this.packageManagerService.installDependency('passport-github');
-        await this.jwt.addGithubAuthStrategy();
+        await  this.packageManagerService.installDependency('passport-github');
+        await  this.jwt.addGithubAuthStrategy();
         await  this.fileManagerService.addImportsToAppModule(`import { PassportModule } from '@nestjs/passport';`,`PassportModule.register({ defaultStrategy: 'github' })`);
-        await  this.fileManagerService.addcontrollersToAppModule(`import { AuthController } from './auth/AuthController';`,`AuthController`);
+        await  this.fileManagerService.addImportsToAppModule(`import { GithubAuthModule } from './auth/githubauth.module';`,`GithubAuthModule`);
         await  this.fileManagerService.addProviderToAppModule(`import { GithubStrategy } from './auth/github.strategy';`,`GithubStrategy`);
 
 

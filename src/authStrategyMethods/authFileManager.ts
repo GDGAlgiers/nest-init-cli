@@ -323,9 +323,14 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
         let githubcontrollerContent = `/* eslint-disable prettier/prettier */
 import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { GithubService } from './github.service';
 
 @Controller('auth')
-export class AuthController {
+export class GithubAuthController {
+  constructor(
+    private readonly githubService: GithubService,
+  ) {}
+
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async githubLogin() {}
@@ -333,21 +338,59 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   async githubLoginCallback(@Req() req, @Res() res) {
-    const { accessToken, profile } = req.user;
-    // Handle your logic after successful login
-    console.log('User profile:', profile); // Logging user profile to console
-    // here you can add services for your application
-    //
-    //
-    //
-    
-    res.send('Successfully logged in with GitHub.');
+    try {
+      await this.githubService.githubLoginCallback(req.user, res);
+    } catch (err) {
+      console.error('Error during GitHub login:', err);
+      res.status(500).send('Error during GitHub login.');
+    }
   }
 }
 `;
-                 filename = `AuthController.ts`;
+                 filename = `githubAuth.controller.ts`;
                 this.createFile(filename,githubcontrollerContent);
-               
+               let githubServicecontent=`/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class GithubService {
+  async githubLoginCallback(user: any, res: any) {
+    const { accessToken, profile } = user;
+    
+    // Handle your logic after successful login
+    console.log('User profile:', profile); // Logging user profile to console
+    
+    // Here you can add services for your application like create user or something else
+    // For example:
+    // if (!userExists) {
+    //   await this.usersService.createUser(profile);
+    // }
+
+    // Send a response back to the client
+    res.send('Successfully logged in with GitHub.');
+  }
+}
+`
+               filename =`github.service.ts`
+               this.createFile(filename,githubServicecontent);
+               let githubModulecontent=`/* eslint-disable prettier/prettier */
+import { Module } from '@nestjs/common';
+import { GithubAuthController } from './githubAuth.controller';
+import { GithubService } from './github.service';
+
+
+@Module({
+  
+  controllers: [GithubAuthController],
+  providers: [GithubService, ],
+  exports: [GithubService], // Export GithubService to be used in other modules
+
+})
+export class GithubAuthModule {}
+`
+               filename =`githubauth.module.ts`
+               this.createFile(filename,githubModulecontent);
+
       }
 
 }
