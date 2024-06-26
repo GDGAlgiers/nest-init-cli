@@ -122,12 +122,12 @@ export class AuthConfigCommand extends CommandRunner {
 
       if (addGithubAuth) {
         console.log('Adding Githb auth...');
+        await this.initauthGithub()
         await  this.packageManagerService.installDependency('passport-github');
         await  this.jwt.addGithubAuthStrategy();
         await  this.fileManagerService.addImportsToAppModule(`import { PassportModule } from '@nestjs/passport';`,`PassportModule.register({ defaultStrategy: 'github' })`);
-        await  this.fileManagerService.addImportsToAppModule(`import { GithubAuthModule } from './auth/githubauth.module';`,`GithubAuthModule`);
-        await  this.fileManagerService.addProviderToAppModule(`import { GithubStrategy } from './auth/github.strategy';`,`GithubStrategy`);
-
+        await  this.fileManagerService.addImportsToAppModule(`import { GithubAuthModule } from './auth/github/githubauth.module';`,`GithubAuthModule`);
+        await  this.fileManagerService.addProviderToAppModule(`import { GithubStrategy } from './auth/github/github.strategy';`,`GithubStrategy`);
 
       }
 
@@ -163,5 +163,10 @@ export class AuthConfigCommand extends CommandRunner {
     } else {
       console.log('Auth module and service already exist.');
     }
+  }
+  private async initauthGithub(): Promise<void> {
+    
+     await this.fileManagerService.createDirectoryIfNotExists("src/auth/github");
+
   }
 }

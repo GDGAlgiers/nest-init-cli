@@ -4,7 +4,6 @@
 
 import { join } from "path";
 import { writeFile } from 'fs/promises';
-import { FileManager } from "./utils/fileManager";
 import { FileManagerService } from "../utils/fileManager.service";
 
 
@@ -12,17 +11,15 @@ export class AuthFileManager {
   constructor(
     private readonly fileManagerService: FileManagerService
   ) {}
- 
     
-     async createFile(name,content): Promise<void> {
-        const authFolderPath = join(process.cwd(),'src', 'auth'); // Folder path corrected to 'auth'
+     async createFile(name,content,path): Promise<void> {
+        const authFolderPath = join(process.cwd(),'src', path); // Folder path corrected to 'auth'
     
         let moduleContent = content;
         let filename = name;
       
       
         try {
-          console.log('Auth Folder Path:', authFolderPath);
           const filePath = join(authFolderPath, filename);
           await writeFile(filePath, moduleContent);
           console.log(` ${filename} created successfully `)
@@ -181,7 +178,7 @@ export class AuthService {
 }
 `;
                 filename = `auth.service.ts`;
-                await    this.createFile(filename,authServiceContent);
+                await    this.createFile(filename,authServiceContent,"auth");
               let LocalStrategyContent = `/* eslint-disable prettier/prettier */
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
@@ -204,7 +201,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
         }`;
          filename = `local.strategy.ts`;
-         await  this.createFile(filename,LocalStrategyContent);
+         await  this.createFile(filename,LocalStrategyContent,"auth");
       
         let authModuleContent = `import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -221,7 +218,7 @@ import { LocalStrategy } from './local.strategy';
 export class AuthModule {}
 `
         filename = `auth.module.ts`;
-        await    this.createFile(filename,authModuleContent);
+        await    this.createFile(filename,authModuleContent,"auth");
         let emailmoduleContent = `/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -261,7 +258,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 export class MailModule {}
 `
         filename = `email.module.ts`;
-        await    this.createFile(filename,emailmoduleContent);
+        await    this.createFile(filename,emailmoduleContent,"auth");
          }
       
       async addJwtStrategy(): Promise<void> {
@@ -286,7 +283,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 `;
         let filename = `jwt.strategy.ts`;
-        this.createFile(filename,jwtStrategyContent);
+        this.createFile(filename,jwtStrategyContent,"auth");
 
        await this.modifyAppController();
       }
@@ -319,7 +316,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 }
 `;
                  filename = `github.strategy.ts`;
-                this.createFile(filename,githubStrategyContent);
+                this.createFile(filename,githubStrategyContent,"auth/github");
         let githubcontrollerContent = `/* eslint-disable prettier/prettier */
 import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -348,7 +345,7 @@ export class GithubAuthController {
 }
 `;
                  filename = `githubAuth.controller.ts`;
-                this.createFile(filename,githubcontrollerContent);
+                this.createFile(filename,githubcontrollerContent,"auth/github");
                let githubServicecontent=`/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 
@@ -372,7 +369,7 @@ export class GithubService {
 }
 `
                filename =`github.service.ts`
-               this.createFile(filename,githubServicecontent);
+               this.createFile(filename,githubServicecontent,"auth/github");
                let githubModulecontent=`/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { GithubAuthController } from './githubAuth.controller';
@@ -389,7 +386,7 @@ import { GithubService } from './github.service';
 export class GithubAuthModule {}
 `
                filename =`githubauth.module.ts`
-               this.createFile(filename,githubModulecontent);
+               this.createFile(filename,githubModulecontent,"auth/github");
 
       }
 
