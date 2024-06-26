@@ -31,68 +31,7 @@ export class AuthFileManager {
         // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
         // await this.fileManagerService.addImportsToAppModule(importStatement, "");
       }
-     async modifyAppController(): Promise<void> {
-        const authFolderPath = join(process.cwd(),'src'); // Folder path corrected to 'auth'
     
-        let moduleContent = `/* eslint-disable prettier/prettier */
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
-import { AppService } from './app.service';
-import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth/auth.service';
-
-@Controller()
-export class AppController {
-  constructor(
-    private readonly appService: AppService, 
-    private readonly authService: AuthService
-  ) {}
-  
-  @UseGuards(AuthGuard('local'))
-  @Post('auth/login')
-  async login(@Request() req) {
-    return this.authService.login(req.user);
-  }
-  @Post('auth/register')
-  async register(@Body() body) {
-    const { email, password } = body;
-    return this.authService.register(email, password);
-  }
-  @Post('auth/request-password-reset')
-  async requestPasswordReset(@Body('email') email: string) {
-    return this.authService.requestPasswordReset(email);
-  }
-
-  @Post('auth/reset-password')
-  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
-    return this.authService.resetPassword(token, newPassword);
-  }
-  @UseGuards(AuthGuard('jwt'))
-    @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
-  }
-  @UseGuards(AuthGuard('jwt'))
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
-  }
-}
-`;
-        let filename = `app.controller.ts`;
-      
-      
-        try {
-          const filePath = join(authFolderPath, filename);
-          await writeFile(filePath, moduleContent);
-          console.log(` ${filename} modified successfully `)
-        } catch (err) {
-          console.error(`Failed to modify ${filename}`, err);
-          throw err; // Rethrow the error to handle it further if needed
-        }
-      
-        // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
-        // await this.fileManagerService.addImportsToAppModule(importStatement, "");
-      }
      async createServices(): Promise<void> {
         let filename = ``;
         let authServiceContent = `
@@ -262,6 +201,7 @@ export class MailModule {}
          }
       
       async addJwtStrategy(): Promise<void> {
+        let filename=``
         let jwtStrategyContent = `/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
@@ -282,10 +222,69 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 }
 `;
-        let filename = `jwt.strategy.ts`;
+         filename = `jwt.strategy.ts`;
         this.createFile(filename,jwtStrategyContent,"auth");
+        let authConrollerContent = `/* eslint-disable prettier/prettier */
+import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from './auth.service';
 
-       await this.modifyAppController();
+@Controller()
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService
+  ) {}
+  
+  @UseGuards(AuthGuard('local'))
+  @Post('auth/login')
+  async login(@Request() req) {
+    return this.authService.login(req.user);
+  }
+  @Post('auth/register')
+  async register(@Body() body) {
+    const { email, password } = body;
+    return this.authService.register(email, password);
+  }
+  @Post('auth/request-password-reset')
+  async requestPasswordReset(@Body('email') email: string) {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Post('auth/reset-password')
+  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
+    return this.authService.resetPassword(token, newPassword);
+  }
+  @UseGuards(AuthGuard('jwt'))
+    @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
+  }
+  
+}
+`;
+         filename = `auth.controller.ts`;
+        this.createFile(filename,authConrollerContent,"auth");
+        let authModuleContent = `import { AuthController } from './auth.controller';
+ import { JwtModule } from '@nestjs/jwt';
+ import { JwtStrategy } from './jwt.strategy';
+ import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { UsersModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
+import { LocalStrategy } from './local.strategy';
+
+@Module({
+imports:[JwtModule.register({ secret: process.env.JWT_SECRET||"2024",}),    UsersModule, PassportModule],
+providers:[JwtStrategy,    AuthService, LocalStrategy],
+  exports: [AuthService],
+  controllers:[AuthController]
+
+})
+export class AuthModule {}
+`
+                filename = `auth.module.ts`;
+                await    this.createFile(filename,authModuleContent,"auth");
+
       }
       async addGithubAuthStrategy (): Promise<void> {
         let filename = ``

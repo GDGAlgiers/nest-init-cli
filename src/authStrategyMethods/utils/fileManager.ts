@@ -45,6 +45,13 @@ private async readByLineAsyncAndUpdate(filePath:string,providerName:string,strin
     const fileData:string = await this.readByLineAsyncAndUpdate(filePath,providerName,"imports",providerPath)
     await writeFile(filePath, fileData);
   }
+  async addControllersToAuthModule(providerPath: string, providerName: string) {
+    const filePath = process.cwd() + '/src/auth/auth.module.ts';
+
+
+    const fileData:string = await this.readByLineAsyncAndUpdate(filePath,providerName,"controllers",providerPath)
+    await writeFile(filePath, fileData);
+  }
 
 
 } 
