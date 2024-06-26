@@ -290,4 +290,64 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
        await this.modifyAppController();
       }
+      async addGithubAuthStrategy (): Promise<void> {
+        let filename = ``
+        let githubStrategyContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-github';
+import { ConfigService } from '@nestjs/config';
+
+@Injectable()
+export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
+  constructor(private readonly configService: ConfigService) {
+    super({
+      clientID: configService.get('GITHUB_CLIENT_ID'),
+      clientSecret: configService.get('GITHUB_CLIENT_SECRET'),
+      callbackURL: 'http://localhost:3000/auth/github/callback',
+    });
+  }
+
+  async validate(accessToken: string, refreshToken: string, profile: any) {
+    // Log entire profile object for inspection
+    console.log('GitHub Profile:', profile);
+  
+    // Return the entire profile object along with accessToken and refreshToken
+    return { accessToken, refreshToken, profile };
+  }
+  
+}
+`;
+                 filename = `github.strategy.ts`;
+                this.createFile(filename,githubStrategyContent);
+        let githubcontrollerContent = `/* eslint-disable prettier/prettier */
+import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Controller('auth')
+export class AuthController {
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  async githubLogin() {}
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubLoginCallback(@Req() req, @Res() res) {
+    const { accessToken, profile } = req.user;
+    // Handle your logic after successful login
+    console.log('User profile:', profile); // Logging user profile to console
+    // here you can add services for your application
+    //
+    //
+    //
+    
+    res.send('Successfully logged in with GitHub.');
+  }
+}
+`;
+                 filename = `AuthController.ts`;
+                this.createFile(filename,githubcontrollerContent);
+               
+      }
+
 }

@@ -25,9 +25,7 @@ export class AuthConfigCommand extends CommandRunner {
   async run(passedParams: string[]): Promise<void> {
     try {
       await this.initauth();
-      await this.jwt.createServices();
-      await  this.fileManagerService.addImportsToAppModule(`import { AuthModule } from './auth/auth.module';`,`AuthModule`)
-
+   
       const folderExists = await this.fileManagerService.doesFolderExist("users");
       console.log(`User resource exists: ${folderExists}`);
 
@@ -66,7 +64,9 @@ export class AuthConfigCommand extends CommandRunner {
           message: 'Choose auth type:',
           choices: ['JWT', 'Cookies', 'Session'],
         });
-
+        await this.jwt.createServices();
+        await  this.fileManagerService.addImportsToAppModule(`import { AuthModule } from './auth/auth.module';`,`AuthModule`)
+  
         console.log(`Selected auth type: ${authType}`);
         const authSpinner = new Spinner('Installing auth dependencies... %s');
         authSpinner.setSpinnerString('|/-\\');
@@ -86,7 +86,6 @@ export class AuthConfigCommand extends CommandRunner {
           await this.fileManager.addImportsToAuthModule(`import { JwtModule } from '@nestjs/jwt';`,`JwtModule.register({ secret: process.env.JWT_SECRET||"2024",})`);
           await  this.fileManagerService.addImportsToAppModule(`import { MailModule } from './auth/email.module';`,`MailModule`);
           await  this.fileManagerService.addImportsToAppModule(`import { ConfigModule } from '@nestjs/config';`,`ConfigModule.forRoot()`);
-
           console.log("you should fixe user services to use jwt strategy");
           
           authSpinner.stop(true);
@@ -114,6 +113,22 @@ export class AuthConfigCommand extends CommandRunner {
       if (addFbAuth) {
         console.log('Adding Facebook auth...');
         this.packageManagerService.installDependency('passport-facebook');
+      }
+      const { addGithubAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGithubAuth',
+        message: 'Do you want to add auth with Github?',
+      });
+
+      if (addGithubAuth) {
+        console.log('Adding Githb auth...');
+        await    this.packageManagerService.installDependency('passport-github');
+        await this.jwt.addGithubAuthStrategy();
+        await  this.fileManagerService.addImportsToAppModule(`import { PassportModule } from '@nestjs/passport';`,`PassportModule.register({ defaultStrategy: 'github' })`);
+        await  this.fileManagerService.addcontrollersToAppModule(`import { AuthController } from './auth/AuthController';`,`AuthController`);
+        await  this.fileManagerService.addProviderToAppModule(`import { GithubStrategy } from './auth/github.strategy';`,`GithubStrategy`);
+
+
       }
 
       console.log('Auth services added successfully');
