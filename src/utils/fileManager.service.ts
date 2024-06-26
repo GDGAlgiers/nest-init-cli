@@ -108,14 +108,11 @@ export class FileManagerService {
       await mkdir(path, { recursive: true });
     }
   }
-  async doesFolderExist(folder): Promise<boolean> {
-    const folderPath = join(__dirname, '..', folder);
 
+  async doesFolderExist(folder: string): Promise<boolean> {
+    const folderPath = join(process.cwd(), 'src', folder);
+    console.log(folderPath);
     // Check if the folder exists
-    if (existsSync(folderPath)) {
-      return true;
-    } else {
-      return false;
-    }
+    return existsSync(folderPath);
   }
 }

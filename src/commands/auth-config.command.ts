@@ -9,7 +9,7 @@ import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adj
 import { FileManager } from '../authStrategyMethods/utils/fileManager';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 
-@Command({ name: 'add-auth', description: 'add auth services' })
+@Command({ name: 'add-auth', description: 'Add authentication services' })
 export class AuthConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
@@ -70,8 +70,7 @@ export class AuthConfigCommand extends CommandRunner {
       });
 
       if (addFbAuth) {
-        console.log('Adding Facebook auth...');
-        this.packageManagerService.installDependency('passport-facebook');
+        await this.runFacebookAuth();
       }
       const { addGithubAuth } = await prompt({
         type: 'confirm',
@@ -80,29 +79,12 @@ export class AuthConfigCommand extends CommandRunner {
       });
 
       if (addGithubAuth) {
-        console.log('Adding Githb auth...');
-        await this.initauthGithub();
-        await this.packageManagerService.installDependency('passport-github');
-        await this.jwt.addGithubAuthStrategy();
-        await this.fileManagerService.addImportsToAppModule(
-          `import { PassportModule } from '@nestjs/passport';`,
-          `PassportModule.register({ defaultStrategy: 'github' })`,
-        );
-        await this.fileManagerService.addImportsToAppModule(
-          `import { GithubAuthModule } from './auth/github/githubauth.module';`,
-          `GithubAuthModule`,
-        );
-        await this.fileManagerService.addProviderToAppModule(
-          `import { GithubStrategy } from './auth/github/github.strategy';`,
-          `GithubStrategy`,
-        );
+        await this.runGithubAuth();
       }
-
       console.log('Auth services added successfully');
     } catch (error) {
       console.error('Error while adding auth services:', error);
     } finally {
-      // Stop the spinner or perform cleanup if needed
     }
   }
   // function to add Google OAuth Service
@@ -116,27 +98,31 @@ export class AuthConfigCommand extends CommandRunner {
     try {
       // Check and prompt for required environment variables
       await checkAndPromptEnvVariables('google');
+      await this.initFolder('google');
       googleAuthSpinner.start();
       // Install necessary dependencies
       await this.packageManagerService.installDependency(
         'passport-google-oauth20',
       );
 
-      // Add Google strategy to auth module providers
-      await this.fileManager.addProviderToAuthModule(
-        `import { GoogleStrategy } from './google.strategy';`,
-        'GoogleStrategy',
-      );
-
-      // Create Google OAuth strategy
-      await this.jwt.createGoogleStrategy();
-
-      // Add PassportModule configuration to auth module imports
-      await this.fileManager.addImportsToAuthModule(
+      await this.fileManagerService.addImportsToAppModule(
         `import { PassportModule } from '@nestjs/passport';`,
         `PassportModule.register({ defaultStrategy: 'google' })`,
       );
 
+      // Add GoogleAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { GoogleAuthModule } from './auth/google/googleauth.module';`,
+        `GoogleAuthModule`,
+      );
+
+      // Add Google strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { GoogleStrategy } from './auth/google/google.strategy';`,
+        `GoogleStrategy`,
+      );
+      // Create Google OAuth strategy
+      await this.jwt.createGoogleAuthStrategy();
       console.log('Google OAuth added successfully.');
     } catch (error) {
       console.error('Error while adding Google OAuth:', error);
@@ -146,7 +132,7 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   // function to add Facebook OAuth
-  async runFacebookAuth(): Promise<void> {
+  private async runFacebookAuth(): Promise<void> {
     console.log('Adding Facebook auth...');
     const facebookAuthSpinner = new Spinner(
       'Installing Facebook auth dependencies... %s',
@@ -154,23 +140,34 @@ export class AuthConfigCommand extends CommandRunner {
     facebookAuthSpinner.setSpinnerString('|/-\\');
 
     try {
-      // Install necessary dependencies
-      await this.packageManagerService.installDependency('passport-facebook');
+      // Check and prompt for required environment variables
+      await checkAndPromptEnvVariables('facebook');
+
+      // Initialize the facebook folder
+      await this.initFolder('facebook');
       facebookAuthSpinner.start();
 
+      // Install necessary dependencies
+      await this.packageManagerService.installDependency('passport-facebook');
+
       // Create Facebook strategy
-      await this.jwt.createFacebookStrategy();
+      await this.jwt.createFacebookAuthStrategy();
 
-      // Add Facebook strategy to auth module providers
-      await this.fileManager.addProviderToAuthModule(
-        `import { FacebookStrategy } from './facebook.strategy';`,
-        'FacebookStrategy',
-      );
-
-      // Add PassportModule configuration to auth module imports
-      await this.fileManager.addImportsToAuthModule(
+      await this.fileManagerService.addImportsToAppModule(
         `import { PassportModule } from '@nestjs/passport';`,
         `PassportModule.register({ defaultStrategy: 'facebook' })`,
+      );
+
+      // Add FacebookAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { FacebookAuthModule } from './auth/facebook/facebookauth.module';`,
+        `FacebookAuthModule`,
+      );
+
+      // Add Facebook strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { FacebookStrategy } from './auth/facebook/facebook.strategy';`,
+        `FacebookStrategy`,
       );
 
       console.log('Facebook OAuth added successfully.');
@@ -180,6 +177,52 @@ export class AuthConfigCommand extends CommandRunner {
       facebookAuthSpinner.stop(true);
     }
   }
+
+  // function to add github auth
+  private async runGithubAuth(): Promise<void> {
+    console.log('Adding Github auth...');
+    const githubAuthSpinner = new Spinner(
+      'Installing Github auth dependencies... %s',
+    );
+    githubAuthSpinner.setSpinnerString('|/-\\');
+    githubAuthSpinner.start();
+
+    try {
+      // Initialize the github folder
+      await this.initFolder('github');
+
+      // Install necessary dependencies
+      await this.packageManagerService.installDependency('passport-github');
+
+      // Add GitHub strategy to auth module providers
+      await this.jwt.addGithubAuthStrategy();
+
+      // Add PassportModule configuration to auth module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { PassportModule } from '@nestjs/passport';`,
+        `PassportModule.register({ defaultStrategy: 'github' })`,
+      );
+
+      // Add GithubAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { GithubAuthModule } from './auth/github/githubauth.module';`,
+        `GithubAuthModule`,
+      );
+
+      // Add Github strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { GithubStrategy } from './auth/github/github.strategy';`,
+        `GithubStrategy`,
+      );
+
+      console.log('Github OAuth added successfully.');
+    } catch (error) {
+      console.error('Error while adding Github OAuth:', error);
+    } finally {
+      githubAuthSpinner.stop(true);
+    }
+  }
+
   // function to add local auth (email/password)
   private async runLocalAuth(): Promise<void> {
     const { authType } = await prompt({
@@ -266,7 +309,7 @@ export class AuthConfigCommand extends CommandRunner {
       console.log('Auth module and service already exist.');
     }
   }
-  private async initauthGithub(): Promise<void> {
-    await this.fileManagerService.createDirectoryIfNotExists('src/auth/github');
+  private async initFolder(dir: string): Promise<void> {
+    await this.fileManagerService.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }

@@ -1,14 +1,5 @@
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthModule } from './auth/auth.module';
 /* eslint-disable prettier/prettier */
-import { AuthModule } from './auth/auth.module';
+
 import { Module } from '@nestjs/common';
 import { CommandRunnerModule } from 'nest-commander';
 import { PrismaConfigCommand } from './commands/prisma-config.command';
@@ -41,7 +32,7 @@ import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
     FileManager,
     AppService,
   ],
-  imports:[AuthModule, AuthModule, AuthModule, AuthModule, AuthModule, AuthModule, AuthModule, AuthModule, AuthModule,  AuthModule, CommandRunnerModule, UsersModule],
+  imports: [CommandRunnerModule, UsersModule],
   controllers: [AppController],
 })
 export class AppModule {}

@@ -156,13 +156,13 @@ export class AuthModule {}
     await this.createFile(filename, authModuleContent, 'auth');
   }
 
-  async createGoogleStrategy(): Promise<void> {
-    let filename = `google.strategy.ts`;
+  async createGoogleAuthStrategy(): Promise<void> {
+    let filename = 'google.strategy.ts';
     let googleStrategyContent = `/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -170,7 +170,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_OAUTH_CALLBACK_URL,
+      callbackURL: 'http://localhost:3000/auth/google/callback',
       scope: ['email', 'profile'],
     });
   }
@@ -198,16 +198,83 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 }
 `;
-    await this.createFile(filename, googleStrategyContent, 'auth');
-  }
+    await this.createFile(filename, googleStrategyContent, 'auth/google');
 
-  async createFacebookStrategy(): Promise<void> {
-    let filename = `facebook.strategy.ts`;
+    let googleControllerContent = `/* eslint-disable prettier/prettier */
+import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { GoogleService } from './google.service';
+
+@Controller('auth')
+export class GoogleAuthController {
+  constructor(private readonly googleService: GoogleService) {}
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleLogin() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleLoginCallback(@Req() req, @Res() res) {
+    try {
+      await this.googleService.googleLoginCallback(req.user, res);
+    } catch (err) {
+      console.error('Error during Google login:', err);
+      res.status(500).send('Error during Google login.');
+    }
+  }
+}
+`;
+    filename = 'googleAuth.controller.ts';
+    await this.createFile(filename, googleControllerContent, 'auth/google');
+
+    let googleServiceContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class GoogleService {
+  async googleLoginCallback(user: any, res: any) {
+    const { accessToken, profile } = user;
+
+    // Handle your logic after successful login
+    console.log('User profile:', profile); // Logging user profile to console
+
+    // Here you can add services for your application like create user or something else
+    // For example:
+    // if (!userExists) {
+    //   await this.usersService.createUser(profile);
+    // }
+
+    // Send a response back to the client
+    res.send('Successfully logged in with Google.');
+  }
+}
+`;
+    filename = 'google.service.ts';
+    await this.createFile(filename, googleServiceContent, 'auth/google');
+
+    let googleModuleContent = `/* eslint-disable prettier/prettier */
+import { Module } from '@nestjs/common';
+import { GoogleAuthController } from './googleAuth.controller';
+import { GoogleService } from './google.service';
+
+@Module({
+  controllers: [GoogleAuthController],
+  providers: [GoogleService],
+  exports: [GoogleService], // Export GoogleService to be used in other modules
+})
+export class GoogleAuthModule {}
+`;
+    filename = 'googleauth.module.ts';
+    await this.createFile(filename, googleModuleContent, 'auth/google');
+  }
+  async createFacebookAuthStrategy(): Promise<void> {
+    let filename = 'facebook.strategy.ts';
     let facebookStrategyContent = `/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-facebook';
-import { AuthService } from './auth.service';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
@@ -215,8 +282,9 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     super({
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: process.env.FACEBOOK_OAUTH_CALLBACK_URL,
+      callbackURL: 'http://localhost:3000/auth/facebook/callback',
       scope: ['email', 'public_profile'],
+      profileFields: ['emails', 'name', 'photos']
     });
   }
 
@@ -228,10 +296,10 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   ): Promise<any> {
     const { name, emails, photos } = profile;
     const user = {
-      email: emails ? emails[0].value : null,
-      firstName: name ? name.givenName : null,
-      lastName: name ? name.familyName : null,
-      picture: photos ? photos[0].value : null,
+      email: emails[0].value,
+      firstName: name.givenName,
+      lastName: name.familyName,
+      picture: photos[0].value,
       accessToken,
     };
     const payload = {
@@ -243,7 +311,75 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   }
 }
 `;
-    await this.createFile(filename, facebookStrategyContent, 'auth');
+    await this.createFile(filename, facebookStrategyContent, 'auth/facebook');
+
+    let facebookControllerContent = `/* eslint-disable prettier/prettier */
+import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { FacebookService } from './facebook.service';
+
+@Controller('auth')
+export class FacebookAuthController {
+  constructor(private readonly facebookService: FacebookService) {}
+
+  @Get('facebook')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLogin() {}
+
+  @Get('facebook/callback')
+  @UseGuards(AuthGuard('facebook'))
+  async facebookLoginCallback(@Req() req, @Res() res) {
+    try {
+      await this.facebookService.facebookLoginCallback(req.user, res);
+    } catch (err) {
+      console.error('Error during Facebook login:', err);
+      res.status(500).send('Error during Facebook login.');
+    }
+  }
+}
+`;
+    filename = 'facebookAuth.controller.ts';
+    await this.createFile(filename, facebookControllerContent, 'auth/facebook');
+
+    let facebookServiceContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class FacebookService {
+  async facebookLoginCallback(user: any, res: any) {
+    const { accessToken, profile } = user;
+
+    // Handle your logic after successful login
+    console.log('User profile:', profile); // Logging user profile to console
+
+    // Here you can add services for your application like create user or something else
+    // For example:
+    // if (!userExists) {
+    //   await this.usersService.createUser(profile);
+    // }
+
+    // Send a response back to the client
+    res.send('Successfully logged in with Facebook.');
+  }
+}
+`;
+    filename = 'facebook.service.ts';
+    await this.createFile(filename, facebookServiceContent, 'auth/facebook');
+
+    let facebookModuleContent = `/* eslint-disable prettier/prettier */
+import { Module } from '@nestjs/common';
+import { FacebookAuthController } from './facebookAuth.controller';
+import { FacebookService } from './facebook.service';
+
+@Module({
+  controllers: [FacebookAuthController],
+  providers: [FacebookService],
+  exports: [FacebookService], // Export FacebookService to be used in other modules
+})
+export class FacebookAuthModule {}
+`;
+    filename = 'facebookauth.module.ts';
+    await this.createFile(filename, facebookModuleContent, 'auth/facebook');
   }
 
   async addJwtStrategy(): Promise<void> {
