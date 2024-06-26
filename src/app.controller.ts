@@ -18,8 +18,8 @@ export class AppController {
   }
   @Post('auth/register')
   async register(@Body() body) {
-    const { username, password } = body;
-    return this.authService.register(username, password);
+    const { email, password } = body;
+    return this.authService.register(email, password);
   }
   @UseGuards(AuthGuard('jwt'))
     @Get('profile')

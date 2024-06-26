@@ -2,42 +2,36 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable prettier/prettier */
 
-import { join } from "path";
+import { join } from 'path';
 import { writeFile } from 'fs/promises';
-import { FileManager } from "./utils/fileManager";
-import { FileManagerService } from "../utils/fileManager.service";
-
+import { FileManagerService } from '../utils/fileManager.service';
 
 export class AuthFileManager {
-  constructor(
-    private readonly fileManagerService: FileManagerService
-  ) {}
- 
-    
-     async createFile(name,content): Promise<void> {
-        const authFolderPath = join(process.cwd(),'src', 'auth'); // Folder path corrected to 'auth'
-    
-        let moduleContent = content;
-        let filename = name;
-      
-      
-        try {
-          console.log('Auth Folder Path:', authFolderPath);
-          const filePath = join(authFolderPath, filename);
-          await writeFile(filePath, moduleContent);
-          console.log(` ${filename} created successfully `)
-        } catch (err) {
-          console.error(`Failed to create ${filename} in auth folder:`, err);
-          throw err; // Rethrow the error to handle it further if needed
-        }
-      
-        // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
-        // await this.fileManagerService.addImportsToAppModule(importStatement, "");
-      }
-     async modifyAppController(): Promise<void> {
-        const authFolderPath = join(process.cwd(),'src'); // Folder path corrected to 'auth'
-    
-        let moduleContent = `/* eslint-disable prettier/prettier */
+  constructor(private readonly fileManagerService: FileManagerService) {}
+
+  async createFile(name, content): Promise<void> {
+    const authFolderPath = join(process.cwd(), 'src', 'auth'); // Folder path corrected to 'auth'
+
+    let moduleContent = content;
+    let filename = name;
+
+    try {
+      console.log('Auth Folder Path:', authFolderPath);
+      const filePath = join(authFolderPath, filename);
+      await writeFile(filePath, moduleContent);
+      console.log(` ${filename} created successfully `);
+    } catch (err) {
+      console.error(`Failed to create ${filename} in auth folder:`, err);
+      throw err; // Rethrow the error to handle it further if needed
+    }
+
+    // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
+    // await this.fileManagerService.addImportsToAppModule(importStatement, "");
+  }
+  async modifyAppController(): Promise<void> {
+    const authFolderPath = join(process.cwd(), 'src'); // Folder path corrected to 'auth'
+
+    let moduleContent = `/* eslint-disable prettier/prettier */
 import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -72,24 +66,23 @@ export class AppController {
   }
 }
 `;
-        let filename = `app.controller.ts`;
-      
-      
-        try {
-          const filePath = join(authFolderPath, filename);
-          await writeFile(filePath, moduleContent);
-          console.log(` ${filename} modified successfully `)
-        } catch (err) {
-          console.error(`Failed to modify ${filename}`, err);
-          throw err; // Rethrow the error to handle it further if needed
-        }
-      
-        // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
-        // await this.fileManagerService.addImportsToAppModule(importStatement, "");
-      }
-     async createServices(): Promise<void> {
-        let filename = ``;
-        let authServiceContent = `/* eslint-disable prettier/prettier */
+    let filename = `app.controller.ts`;
+
+    try {
+      const filePath = join(authFolderPath, filename);
+      await writeFile(filePath, moduleContent);
+      console.log(` ${filename} modified successfully `);
+    } catch (err) {
+      console.error(`Failed to modify ${filename}`, err);
+      throw err; // Rethrow the error to handle it further if needed
+    }
+
+    // const importStatement = `import {  } from '../auth/${filename.replace('.ts', '')}';`; // Adjusted import path
+    // await this.fileManagerService.addImportsToAppModule(importStatement, "");
+  }
+  async createServices(): Promise<void> {
+    let filename = ``;
+    let authServiceContent = `/* eslint-disable prettier/prettier */
         import { Injectable } from '@nestjs/common';
         import { UsersService } from '../users/users.service';
         import { JwtService } from '@nestjs/jwt';
@@ -127,10 +120,10 @@ export class AppController {
             };
           }
         }
-        `
-                filename = `auth.service.ts`;
-                await    this.createFile(filename,authServiceContent);
-              let LocalStrategyContent = `/* eslint-disable prettier/prettier */
+        `;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent);
+    let LocalStrategyContent = `/* eslint-disable prettier/prettier */
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -151,10 +144,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     return user;
   }
         }`;
-         filename = `local.strategy.ts`;
-         await  this.createFile(filename,LocalStrategyContent);
-      
-        let authModuleContent = `import { Module } from '@nestjs/common';
+    filename = `local.strategy.ts`;
+    await this.createFile(filename, LocalStrategyContent);
+
+    let authModuleContent = `import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
@@ -167,13 +160,103 @@ import { LocalStrategy } from './local.strategy';
 
 })
 export class AuthModule {}
-`
-        filename = `auth.module.ts`;
-        await    this.createFile(filename,authModuleContent);
-         }
-      
-      async addJwtStrategy(): Promise<void> {
-        let jwtStrategyContent = `/* eslint-disable prettier/prettier */
+`;
+    filename = `auth.module.ts`;
+    await this.createFile(filename, authModuleContent);
+  }
+
+  async createGoogleStrategy(): Promise<void> {
+    let filename = `google.strategy.ts`;
+    let googleStrategyContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { AuthService } from './auth.service';
+
+@Injectable()
+export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
+  constructor(private readonly authService: AuthService) {
+    super({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_OAUTH_CALLBACK_URL,
+      scope: ['email', 'profile'],
+    });
+  }
+
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback,
+  ): Promise<any> {
+    const { name, emails, photos } = profile;
+    const user = {
+      email: emails[0].value,
+      firstName: name.givenName,
+      lastName: name.familyName,
+      picture: photos[0].value,
+      accessToken,
+    };
+    const payload = {
+      user,
+      accessToken,
+    };
+
+    done(null, payload);
+  }
+}
+`;
+    await this.createFile(filename, googleStrategyContent);
+  }
+
+  async createFacebookStrategy(): Promise<void> {
+    let filename = `facebook.strategy.ts`;
+    let facebookStrategyContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, VerifyCallback } from 'passport-facebook';
+import { AuthService } from './auth.service';
+
+@Injectable()
+export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
+  constructor(private readonly authService: AuthService) {
+    super({
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: process.env.FACEBOOK_OAUTH_CALLBACK_URL,
+      scope: ['email', 'public_profile'],
+    });
+  }
+
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback,
+  ): Promise<any> {
+    const { name, emails, photos } = profile;
+    const user = {
+      email: emails ? emails[0].value : null,
+      firstName: name ? name.givenName : null,
+      lastName: name ? name.familyName : null,
+      picture: photos ? photos[0].value : null,
+      accessToken,
+    };
+    const payload = {
+      user,
+      accessToken,
+    };
+
+    done(null, payload);
+  }
+}
+`;
+    await this.createFile(filename, facebookStrategyContent);
+  }
+
+  async addJwtStrategy(): Promise<void> {
+    let jwtStrategyContent = `/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -193,9 +276,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 }
 `;
-        let filename = `jwt.strategy.ts`;
-        this.createFile(filename,jwtStrategyContent);
-
-       await this.modifyAppController();
-      }
+    let filename = `jwt.strategy.ts`;
+    this.createFile(filename, jwtStrategyContent);
+    await this.modifyAppController();
+  }
 }

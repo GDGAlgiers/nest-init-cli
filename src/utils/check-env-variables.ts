@@ -21,15 +21,29 @@ const requiredPostgresEnvVariables = [
   'POSTGRES_DB',
 ];
 const requiredMongoEnvVariables = ['MONGODB_URI', 'MONGODB_DB'];
+const requiredGoogleOAuthVariables = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_OAUTH_CALLBACK_URL',
+];
 
+const requiredFacebookVariables = [
+  'FACEBOOK_APP_ID',
+  'FACEBOOK_APP_SECRET',
+  'FACEBOOK_OAUTH_CALLBACK_URL',
+];
 export async function checkAndPromptEnvVariables(
-  dbType: 'mysql' | 'postgres' | 'mongodb',
+  service: 'mysql' | 'postgres' | 'mongodb' | 'google' | 'facebook',
 ) {
   const requiredEnvVariables =
-    dbType === 'mysql'
+    service === 'mysql'
       ? requiredMysqlEnvVariables
-      : dbType === 'postgres'
+      : service === 'postgres'
       ? requiredPostgresEnvVariables
+      : service === 'google'
+      ? requiredGoogleOAuthVariables
+      : service === 'facebook'
+      ? requiredFacebookVariables
       : requiredMongoEnvVariables;
 
   const missingEnvVariables = requiredEnvVariables.filter(

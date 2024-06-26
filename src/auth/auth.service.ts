@@ -11,8 +11,8 @@
             private jwtService: JwtService,
           ) {}
         
-          async validateUser(username: string, pass: string): Promise<any> {
-            const user = await this.usersService.findOne(username);
+          async validateUser(email: string, pass: string): Promise<any> {
+            const user = await this.usersService.findOne(email);
             if (user && await bcrypt.compare(pass, user.password)) {
               const { password, ...result } = user;
               return result;
@@ -21,16 +21,16 @@
           }
         
           async login(user: any) {
-            const payload = { username: user.username, sub: user.id };
+            const payload = { email: user.email, sub: user.id };
             return {
               access_token: this.jwtService.sign(payload),
             };
           }
         
-          async register(username: string, pass: string) {
+          async register(email: string, pass: string) {
             const hashedPassword = await bcrypt.hash(pass, 10);
-            const user = await this.usersService.create({ username, password: hashedPassword });
-            const payload = { username: user.username, sub: user.userId };
+            const user = await this.usersService.create({ email, password: hashedPassword });
+            const payload = { email: user.email, sub: user.userId };
             return {
               access_token: this.jwtService.sign(payload),
             };
