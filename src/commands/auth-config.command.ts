@@ -70,7 +70,32 @@ export class AuthConfigCommand extends CommandRunner {
       });
 
       if (addFbAuth) {
-        await this.runFacebookAuth();
+        console.log('Adding Facebook auth...');
+        this.packageManagerService.installDependency('passport-facebook');
+      }
+      const { addGithubAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGithubAuth',
+        message: 'Do you want to add auth with Github?',
+      });
+
+      if (addGithubAuth) {
+        console.log('Adding Githb auth...');
+        await this.initauthGithub();
+        await this.packageManagerService.installDependency('passport-github');
+        await this.jwt.addGithubAuthStrategy();
+        await this.fileManagerService.addImportsToAppModule(
+          `import { PassportModule } from '@nestjs/passport';`,
+          `PassportModule.register({ defaultStrategy: 'github' })`,
+        );
+        await this.fileManagerService.addImportsToAppModule(
+          `import { GithubAuthModule } from './auth/github/githubauth.module';`,
+          `GithubAuthModule`,
+        );
+        await this.fileManagerService.addProviderToAppModule(
+          `import { GithubStrategy } from './auth/github/github.strategy';`,
+          `GithubStrategy`,
+        );
       }
 
       console.log('Auth services added successfully');
@@ -240,5 +265,8 @@ export class AuthConfigCommand extends CommandRunner {
     } else {
       console.log('Auth module and service already exist.');
     }
+  }
+  private async initauthGithub(): Promise<void> {
+    await this.fileManagerService.createDirectoryIfNotExists('src/auth/github');
   }
 }
