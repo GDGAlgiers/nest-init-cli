@@ -34,7 +34,7 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '@nestjs-modules/mailer';
-import { User } from '../users/user.interface'; // Ensure this interface matches your user entity
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -44,8 +44,27 @@ export class AuthService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async validateUser(id: number, pass: string): Promise<Omit<User, 'password'> | null> {
+  async validateUserById(
+    id: number,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
     const user = await this.usersService.findOne(id);
+    if (
+      user &&
+      typeof user !== 'string' &&
+      (await bcrypt.compare(pass, user.password))
+    ) {
+      const { ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async validateUserByEmail(
+    email: string,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
+    const user = await this.usersService.findByEmail(email);
     if (
       user &&
       typeof user !== 'string' &&
@@ -56,7 +75,6 @@ export class AuthService {
     }
     return null;
   }
-
   async login(user: any) {
     const payload = { email: user.email, sub: user.id };
     return {
@@ -77,7 +95,7 @@ export class AuthService {
   }
 
   async requestPasswordReset(email: string) {
-    const user = this.usersService.findAll().find(u => u.email === email);
+    const user = this.usersService.findAll().find((u) => u.email === email);
     if (!user) {
       throw new Error('User not found');
     }
@@ -112,7 +130,9 @@ export class AuthService {
       throw new Error('Invalid or expired token');
     }
 
-    const user = this.usersService.findAll().find(u => u.email === payload.email);
+    const user = this.usersService
+      .findAll()
+      .find((u) => u.email === payload.email);
     if (!user) {
       throw new Error('User not found');
     }
@@ -122,7 +142,11 @@ export class AuthService {
 
     return { message: 'Password reset successfully' };
   }
-}`;
+  async findUserById(userId: number) {
+    return this.usersService.findOne(userId);
+  }
+}
+`;
     filename = `auth.service.ts`;
     await this.createFile(filename, authServiceContent, 'auth');
     let LocalStrategyContent = `/* eslint-disable prettier/prettier */
@@ -138,14 +162,14 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(email: string, password: string): Promise<any> {
-    
-    const user = await this.authService.validateUser(email, password);
+    const user = await this.authService.validateUserByEmail(email, password);
     if (!user) {
       throw new UnauthorizedException();
     }
     return user;
   }
-        }`;
+}
+`;
     filename = `local.strategy.ts`;
     await this.createFile(filename, LocalStrategyContent, 'auth');
 
@@ -418,25 +442,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     filename = `jwt.strategy.ts`;
     this.createFile(filename, jwtStrategyContent, 'auth');
     let authControllerContent = `/* eslint-disable prettier/prettier */
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Controller()
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService
-  ) {}
-  
+  constructor(private readonly authService: AuthService) {}
+
   @UseGuards(AuthGuard('local'))
   @Post('auth/login')
   async login(@Request() req) {
     return this.authService.login(req.user);
   }
   @Post('auth/register')
-  async register(@Body() body) {
-    const { email, password } = body;
-    return this.authService.register(email, password);
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
   }
   @Post('auth/request-password-reset')
   async requestPasswordReset(@Body('email') email: string) {
@@ -444,16 +473,19 @@ export class AuthController {
   }
 
   @Post('auth/reset-password')
-  async resetPassword(@Body('token') token: string, @Body('newPassword') newPassword: string) {
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
     return this.authService.resetPassword(token, newPassword);
   }
   @UseGuards(AuthGuard('jwt'))
-    @Get('profile')
+  @Get('profile')
   getProfile(@Request() req) {
     return req.user;
   }
-  
 }
+
 `;
 
     filename = `auth.controller.ts`;
@@ -496,7 +528,7 @@ export class SessionSerializer extends PassportSerializer {
     done(null, user.id); // Serialize user by storing only user id in session
   }
 
-  async deserializeUser(userId: string, done: Function) {
+  async deserializeUser(userId: number, done: Function) {
     try {
       const user = await this.authService.findUserById(userId); // Fetch user from database using userId
       done(null, user); // Deserialize user from stored userId in session
@@ -505,7 +537,7 @@ export class SessionSerializer extends PassportSerializer {
     }
   }
 }
-      `;
+`;
     let filename = `session.strategy.ts`;
     filename = `session.strategy.ts`;
     this.createFile(filename, sessionStrategyContent, 'auth');
@@ -562,7 +594,7 @@ async function bootstrap() {
 
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || 'your-session-secret', // Use an environment variable for the secret
+      secret: process.env.SESSION_SECRET || "2024",
       resave: false,
       saveUninitialized: false,
       cookie: { secure: false }, // Set to true if using HTTPS

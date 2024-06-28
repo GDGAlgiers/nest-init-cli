@@ -115,4 +115,8 @@ export class FileManagerService {
     // Check if the folder exists
     return existsSync(folderPath);
   }
+  // function to create a folder in src/auth
+  async initFolder(dir: string): Promise<void> {
+    await this.createDirectoryIfNotExists(`src/auth/${dir}`);
+  }
 }

@@ -15,7 +15,6 @@ import { AuthFileManager } from './authStrategyMethods/authFileManager';
 import { FileManager } from './authStrategyMethods/utils/fileManager';
 
 import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
-import { UsersModule } from './users/users.module';
 @Module({
   providers: [
     AuthFileManager,
@@ -31,7 +30,7 @@ import { UsersModule } from './users/users.module';
     FileManager,
     AppService,
   ],
-  imports: [CommandRunnerModule, UsersModule],
+  imports: [CommandRunnerModule],
   controllers: [AppController],
 })
 export class AppModule {}

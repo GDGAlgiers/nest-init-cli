@@ -25,12 +25,20 @@ const requiredGoogleOAuthVariables = [
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
 ];
-
+const requiredJwtVariables = ['JWT_SECRET'];
 const requiredGithubVariables = ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'];
-
 const requiredFacebookVariables = ['FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET'];
+const requiredSessionVariables = ['SESSION_SECRET'];
 export async function checkAndPromptEnvVariables(
-  service: 'github' | 'mysql' | 'postgres' | 'mongodb' | 'google' | 'facebook',
+  service:
+    | 'github'
+    | 'mysql'
+    | 'postgres'
+    | 'mongodb'
+    | 'google'
+    | 'facebook'
+    | 'jwt'
+    | 'session',
 ) {
   const requiredEnvVariables =
     service === 'mysql'
@@ -43,6 +51,10 @@ export async function checkAndPromptEnvVariables(
       ? requiredFacebookVariables
       : service === 'github'
       ? requiredGithubVariables
+      : service === 'jwt'
+      ? requiredJwtVariables
+      : service === 'session'
+      ? requiredSessionVariables
       : requiredMongoEnvVariables;
 
   const missingEnvVariables = requiredEnvVariables.filter(

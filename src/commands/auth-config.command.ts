@@ -8,7 +8,7 @@ import { FileManagerService } from '../utils/fileManager.service'; // Adjust pat
 import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adjust path based on actual file location
 import { FileManager } from '../authStrategyMethods/utils/fileManager';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
-import * as fs from 'fs/promises';
+import { generateUserResource } from 'src/authStrategyMethods/utils/generate-user-resource';
 
 @Command({ name: 'add-auth', description: 'Add authentication services' })
 export class AuthConfigCommand extends CommandRunner {
@@ -23,41 +23,34 @@ export class AuthConfigCommand extends CommandRunner {
 
   async run(): Promise<void> {
     try {
-      await this.initauth();
+      await this.initAuth();
       await this.jwt.createServices();
       await this.fileManagerService.addImportsToAppModule(
         `import { AuthModule } from './auth/auth.module';`,
         `AuthModule`,
       );
-
       const folderExists = await this.fileManagerService.doesFolderExist(
         'users',
       );
-      console.log(`User resource exists: ${folderExists}`);
-
       if (!folderExists) {
-        console.log(
-          'User resource does not exist. Generating user resource...',
-        );
-        await this.generateUserResource();
+        await generateUserResource();
       }
-
+      // install passport.js dependencies
       await this.installDependencies();
-
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
-        message: 'Do you want to add auth (login and register)?',
+        message:
+          'Would you like to include authentication features such as login and registration in your project?',
       });
-
       if (addAuth) {
         await this.runLocalAuth();
       }
-
       const { addGoogleAuth } = await prompt({
         type: 'confirm',
         name: 'addGoogleAuth',
-        message: 'Do you want to add auth with Google?',
+        message:
+          'Would you like to integrate authentication using Google in your project?',
       });
 
       if (addGoogleAuth) {
@@ -67,7 +60,8 @@ export class AuthConfigCommand extends CommandRunner {
       const { addFbAuth } = await prompt({
         type: 'confirm',
         name: 'addFbAuth',
-        message: 'Do you want to add auth with Facebook?',
+        message:
+          'Would you like to integrate authentication using Facebook in your project?',
       });
 
       if (addFbAuth) {
@@ -76,21 +70,24 @@ export class AuthConfigCommand extends CommandRunner {
       const { addGithubAuth } = await prompt({
         type: 'confirm',
         name: 'addGithubAuth',
-        message: 'Do you want to add auth with Github?',
+        message:
+          'Would you like to integrate authentication using Github in your project?',
       });
 
       if (addGithubAuth) {
         await this.runGithubAuth();
       }
-      console.log('Auth services added successfully');
+      console.log('Authentication services have been successfully added.');
     } catch (error) {
-      console.error('Error while adding auth services:', error);
+      console.error(
+        'Error occurred while configuring authentication services:',
+        error,
+      );
     } finally {
     }
   }
   // function to add Google OAuth Service
   private async runGoogleAuth(): Promise<void> {
-    console.log('Adding Google auth...');
     const googleAuthSpinner = new Spinner(
       'Installing Google auth dependencies... %s',
     );
@@ -99,7 +96,7 @@ export class AuthConfigCommand extends CommandRunner {
     try {
       // Check and prompt for required environment variables
       await checkAndPromptEnvVariables('google');
-      await this.initFolder('google');
+      await this.fileManagerService.initFolder('google');
       googleAuthSpinner.start();
       // Install necessary dependencies
       await this.packageManagerService.installDependency(
@@ -134,7 +131,6 @@ export class AuthConfigCommand extends CommandRunner {
 
   // function to add Facebook OAuth
   private async runFacebookAuth(): Promise<void> {
-    console.log('Adding Facebook auth...');
     const facebookAuthSpinner = new Spinner(
       'Installing Facebook auth dependencies... %s',
     );
@@ -145,7 +141,7 @@ export class AuthConfigCommand extends CommandRunner {
       await checkAndPromptEnvVariables('facebook');
 
       // Initialize the facebook folder
-      await this.initFolder('facebook');
+      await this.fileManagerService.initFolder('facebook');
       facebookAuthSpinner.start();
 
       // Install necessary dependencies
@@ -181,7 +177,6 @@ export class AuthConfigCommand extends CommandRunner {
 
   // function to add github auth
   private async runGithubAuth(): Promise<void> {
-    console.log('Adding Github auth...');
     const githubAuthSpinner = new Spinner(
       'Installing Github auth dependencies... %s',
     );
@@ -190,11 +185,11 @@ export class AuthConfigCommand extends CommandRunner {
 
     try {
       // Initialize the github folder
-      await this.initFolder('github');
+      await this.fileManagerService.initFolder('github');
 
       // Install necessary dependencies
       await this.packageManagerService.installDependency('passport-github');
-
+      await checkAndPromptEnvVariables('github');
       // Add GitHub strategy to auth module providers
       await this.jwt.addGithubAuthStrategy();
 
@@ -255,6 +250,7 @@ export class AuthConfigCommand extends CommandRunner {
     await this.packageManagerService.installDependency('passport-jwt');
     await this.packageManagerService.installDependency('jsonwebtoken');
     await this.packageManagerService.installDependency('bcryptjs');
+    await checkAndPromptEnvVariables('jwt');
     await this.jwt.addJwtStrategy();
     await this.fileManager.addProviderToAuthModule(
       `import { JwtStrategy } from './jwt.strategy';`,
@@ -270,7 +266,7 @@ export class AuthConfigCommand extends CommandRunner {
   // function to handle adding express session strategy
   private async addSessionAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
-    await this.initFolder('protected');
+    await this.fileManagerService.initFolder('protected');
     await this.jwt.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
@@ -287,76 +283,36 @@ export class AuthConfigCommand extends CommandRunner {
     );
   }
 
-  // Function to generate the user resource and interface
-  private async generateUserResource(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      exec('npx nest g resource users', async (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error generating user resource: ${error.message}`);
-          reject(error);
-          return;
-        }
-        if (stderr) {
-          console.error(`Error output: ${stderr}`);
-          reject(new Error(stderr));
-          return;
-        }
-
-        console.log(`User resource generated: ${stdout}`);
-
-        // Generate user.interface.ts
-        const interfaceContent = `
-        export interface User {
-          id: number;
-          email: string;
-          password: string;
-          // Add other fields as needed
-        }
-      `;
-
-        try {
-          await fs.writeFile(
-            './src/users/user.interface.ts',
-            interfaceContent.trim(),
-          );
-          console.log('User interface generated successfully.');
-          resolve();
-        } catch (err) {
-          console.error('Error generating user interface:', err);
-          reject(err);
-        }
-      });
-    });
-  }
   // function to install passport.js dependencies
   private installDependencies(): void {
-    const spinner = new Spinner('Installing dependencies  ... %s');
+    const spinner = new Spinner('Installing Passport.js dependencies  ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('passport');
     this.packageManagerService.installDependency('@nestjs/passport');
     this.packageManagerService.installDependency('@nestjs-modules/mailer');
-
     spinner.stop(true);
-    console.log('Passport.js installed successfully!');
+    console.log('Passport.js dependencies installed successfully.');
   }
 
   // creates the auth directory if it doesn't exist
-  private async initauth(): Promise<void> {
-    console.log('Initializing authentication service and module.');
+  private async initAuth(): Promise<void> {
+    console.log('Initializing Authentication service and module.');
     const authExists = await this.fileManagerService.doesFolderExist('auth');
     if (!authExists) {
       try {
         await this.fileManagerService.createDirectoryIfNotExists('src/auth');
       } catch (err) {
-        console.error('Error while init auth ', err);
-        throw err; // Rethrow the error to handle it further if needed
+        console.error(
+          'Error while initializing authentication service and module:',
+          err,
+        );
+        throw err;
       }
     } else {
-      console.log('Auth module and service already exist.');
+      console.log(
+        'Authentication module and service already exist. Skipping creation.',
+      );
     }
-  }
-  private async initFolder(dir: string): Promise<void> {
-    await this.fileManagerService.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }
