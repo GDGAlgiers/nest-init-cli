@@ -8,6 +8,7 @@ import { FileManagerService } from '../utils/fileManager.service'; // Adjust pat
 import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adjust path based on actual file location
 import { FileManager } from '../authStrategyMethods/utils/fileManager';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import * as fs from 'fs/promises';
 
 @Command({ name: 'add-auth', description: 'Add authentication services' })
 export class AuthConfigCommand extends CommandRunner {
@@ -20,7 +21,7 @@ export class AuthConfigCommand extends CommandRunner {
     super();
   }
 
-  async run(passedParams: string[]): Promise<void> {
+  async run(): Promise<void> {
     try {
       await this.initauth();
       await this.jwt.createServices();
@@ -241,6 +242,8 @@ export class AuthConfigCommand extends CommandRunner {
 
     if (authType === 'JWT') {
       await this.addJwtAuth();
+    } else if (authType === 'Session') {
+      await this.addSessionAuth();
     }
 
     authSpinner.stop(true);
@@ -264,10 +267,30 @@ export class AuthConfigCommand extends CommandRunner {
     console.log('you should fix user services to use jwt strategy');
   }
 
-  // checks if the users module exists, creates it if it doesn't
+  // function to handle adding express session strategy
+  private async addSessionAuth(): Promise<void> {
+    await this.packageManagerService.installDependency('express-session');
+    await this.initFolder('protected');
+    await this.jwt.addSessionStrategy();
+    await this.fileManagerService.addImportsToAppModule(
+      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `ProtectedModule`,
+    );
+
+    await this.fileManager.addProviderToAuthModule(
+      `import { SessionSerializer } from './session.strategy';`,
+      'SessionSerializer',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { PassportModule } from '@nestjs/passport';`,
+      `PassportModule.register({ session: true })`,
+    );
+  }
+
+  // Function to generate the user resource and interface
   private async generateUserResource(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      exec('npx nest g resource users', (error, stdout, stderr) => {
+      exec('npx nest g resource users', async (error, stdout, stderr) => {
         if (error) {
           console.error(`Error generating user resource: ${error.message}`);
           reject(error);
@@ -278,8 +301,30 @@ export class AuthConfigCommand extends CommandRunner {
           reject(new Error(stderr));
           return;
         }
+
         console.log(`User resource generated: ${stdout}`);
-        resolve();
+
+        // Generate user.interface.ts
+        const interfaceContent = `
+        export interface User {
+          id: number;
+          email: string;
+          password: string;
+          // Add other fields as needed
+        }
+      `;
+
+        try {
+          await fs.writeFile(
+            './src/users/user.interface.ts',
+            interfaceContent.trim(),
+          );
+          console.log('User interface generated successfully.');
+          resolve();
+        } catch (err) {
+          console.error('Error generating user interface:', err);
+          reject(err);
+        }
       });
     });
   }
@@ -290,6 +335,8 @@ export class AuthConfigCommand extends CommandRunner {
     spinner.start();
     this.packageManagerService.installDependency('passport');
     this.packageManagerService.installDependency('@nestjs/passport');
+    this.packageManagerService.installDependency('@nestjs-modules/mailer');
+
     spinner.stop(true);
     console.log('Passport.js installed successfully!');
   }
