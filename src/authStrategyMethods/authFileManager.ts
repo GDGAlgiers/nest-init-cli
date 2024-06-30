@@ -597,7 +597,7 @@ async function bootstrap() {
       secret: process.env.SESSION_SECRET || "2024",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: false }, // Set to true if using HTTPS
+      cookie: { secure: false, maxAge: 3600000 }, // Set secure to true if using HTTPS
     }),
   );
 

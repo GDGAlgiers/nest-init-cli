@@ -108,15 +108,10 @@ export class FileManagerService {
       await mkdir(path, { recursive: true });
     }
   }
-
   async doesFolderExist(folder: string): Promise<boolean> {
     const folderPath = join(process.cwd(), 'src', folder);
     console.log(folderPath);
     // Check if the folder exists
     return existsSync(folderPath);
-  }
-  // function to create a folder in src/auth
-  async initFolder(dir: string): Promise<void> {
-    await this.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }

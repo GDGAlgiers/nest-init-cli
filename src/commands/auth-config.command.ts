@@ -2,7 +2,6 @@
 import { Command, CommandRunner } from 'nest-commander';
 import { Spinner } from 'cli-spinner';
 import { prompt } from 'inquirer';
-import { exec } from 'child_process';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from '../utils/fileManager.service'; // Adjust path based on actual file location
 import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adjust path based on actual file location
@@ -96,7 +95,7 @@ export class AuthConfigCommand extends CommandRunner {
     try {
       // Check and prompt for required environment variables
       await checkAndPromptEnvVariables('google');
-      await this.fileManagerService.initFolder('google');
+      await this.fileManager.initFolder('google');
       googleAuthSpinner.start();
       // Install necessary dependencies
       await this.packageManagerService.installDependency(
@@ -141,7 +140,7 @@ export class AuthConfigCommand extends CommandRunner {
       await checkAndPromptEnvVariables('facebook');
 
       // Initialize the facebook folder
-      await this.fileManagerService.initFolder('facebook');
+      await this.fileManager.initFolder('facebook');
       facebookAuthSpinner.start();
 
       // Install necessary dependencies
@@ -185,7 +184,7 @@ export class AuthConfigCommand extends CommandRunner {
 
     try {
       // Initialize the github folder
-      await this.fileManagerService.initFolder('github');
+      await this.fileManager.initFolder('github');
 
       // Install necessary dependencies
       await this.packageManagerService.installDependency('passport-github');
@@ -239,6 +238,8 @@ export class AuthConfigCommand extends CommandRunner {
       await this.addJwtAuth();
     } else if (authType === 'Session') {
       await this.addSessionAuth();
+    } else {
+      this.addCookiesAuth();
     }
 
     authSpinner.stop(true);
@@ -266,7 +267,7 @@ export class AuthConfigCommand extends CommandRunner {
   // function to handle adding express session strategy
   private async addSessionAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
-    await this.fileManagerService.initFolder('protected');
+    await this.fileManager.initFolder('protected');
     await this.jwt.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
@@ -280,6 +281,26 @@ export class AuthConfigCommand extends CommandRunner {
     await this.fileManager.addImportsToAuthModule(
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule.register({ session: true })`,
+    );
+  }
+
+  // function to handle adding cookies strategy
+  private async addCookiesAuth(): Promise<void> {
+    await this.packageManagerService.installDependency('express-session');
+    await this.fileManager.initFolder('protected');
+    await this.jwt.addSessionStrategy();
+    await this.fileManagerService.addImportsToAppModule(
+      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `ProtectedModule`,
+    );
+
+    await this.fileManager.addProviderToAuthModule(
+      `import { SessionSerializer } from './session.strategy';`,
+      'SessionSerializer',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { PassportModule } from '@nestjs/passport';`,
+      `PassportModule.register()`,
     );
   }
 
