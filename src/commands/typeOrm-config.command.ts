@@ -5,11 +5,89 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { writeFile } from 'fs/promises';
-import { typeOrmMongoModuleContent, typeOrmMySqlModuleContent, typeOrmPostgresModuleContent } from 'src/module-content/typeORm.content';
 
 @Command({ name: 'install-typeOrm', description: 'Install TypeORM' })
 export class TypeOrmConfigCommand extends CommandRunner {
-  
+  /* eslint-disable prettier/prettier */
+
+private typeOrmMongoModuleContent = `
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+    }),
+  ],
+})
+export class TypeOrmMongoModule {}
+`;
+
+private typeOrmPostgresModuleContent = `
+import { DataSource } from 'typeorm';
+import { Global, Module } from '@nestjs/common';
+
+@Global()
+@Module({
+  imports: [],
+  providers: [
+    {
+      provide: DataSource,
+      inject: [],
+      useFactory: async () => {
+        try {
+          const dataSource = new DataSource({
+            type: 'postgres',
+            host: 'localhost',
+            port: 5432,
+            username: 'postgres',
+            password: '20032003',
+            database: 'test',
+            synchronize: true,
+          });
+          await dataSource.initialize();
+          console.log('Database connected successfully');
+          return dataSource;
+        } catch (error) {
+          console.log('Error connecting to database');
+          throw error;
+        }
+      },
+    },
+  ],
+  exports: [DataSource],
+})
+export class TypeOrmPostgresModule {}
+`;
+
+private typeOrmMySqlModuleContent = `
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'mysql',
+      host: 'localhost',
+      port: 3306,
+      username: 'your_mysql_username',
+      password: 'your_mysql_password',
+      database: 'your_mysql_database',
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+  ],
+})
+export class TypeOrmMySqlModule {}
+`;
+
   constructor(
     private readonly packageManagerService: PackageManagerService,
     private readonly fileManagerService: FileManagerService,
@@ -101,15 +179,15 @@ export class TypeOrmConfigCommand extends CommandRunner {
   
     if (flag === '-m' || flag === '--mongodb') {
       filename = 'typeorm.mongodb.module.ts';
-      moduleContent =typeOrmMongoModuleContent
+      moduleContent =this.typeOrmMongoModuleContent
 console.log("please add mongo uri in env file like:MONGODB_URI=mongodb://127.0.0.1:27017/test");
 
     } else if (flag === '-psql' || flag === '--postgresql') {
       filename = 'typeorm.postgresql.module.ts';
-      moduleContent = typeOrmPostgresModuleContent
+      moduleContent = this.typeOrmPostgresModuleContent
     } else if (flag === '-my' || flag === '--mysql') {
       filename = 'typeorm.mysql.module.ts';
-      moduleContent = typeOrmMySqlModuleContent
+      moduleContent = this.typeOrmMySqlModuleContent
     }
   
     try {

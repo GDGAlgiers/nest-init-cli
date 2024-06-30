@@ -1,26 +1,59 @@
 /* eslint-disable prettier/prettier */
 import { prompt } from 'inquirer';
 import { appendFileSync, readFileSync, existsSync } from 'fs';
+import { config } from 'dotenv';
 
-const requiredMysqlEnvVariables = ['MYSQL_HOST', 'MYSQL_PORT', 'MYSQL_USER', 'MYSQL_PASSWORD', 'MYSQL_DB'];
-const requiredPostgresEnvVariables = ['POSTGRES_HOST', 'POSTGRES_PORT', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB'];
+// Load environment variables from the .env file
+config();
 
-export async function checkAndPromptEnvVariables(dbType: 'mysql' | 'postgres') {
-  const requiredEnvVariables = dbType === 'mysql' ? requiredMysqlEnvVariables : requiredPostgresEnvVariables;
-  const missingEnvVariables = requiredEnvVariables.filter(envVar => !process.env[envVar]);
+const requiredMysqlEnvVariables = [
+  'MYSQL_HOST',
+  'MYSQL_PORT',
+  'MYSQL_USER',
+  'MYSQL_PASSWORD',
+  'MYSQL_DB',
+];
+const requiredPostgresEnvVariables = [
+  'POSTGRES_HOST',
+  'POSTGRES_PORT',
+  'POSTGRES_USER',
+  'POSTGRES_PASSWORD',
+  'POSTGRES_DB',
+];
+const requiredMongoEnvVariables = ['MONGODB_URI', 'MONGODB_DB'];
+
+export async function checkAndPromptEnvVariables(
+  dbType: 'mysql' | 'postgres' | 'mongodb',
+) {
+  const requiredEnvVariables =
+    dbType === 'mysql'
+      ? requiredMysqlEnvVariables
+      : dbType === 'postgres'
+      ? requiredPostgresEnvVariables
+      : requiredMongoEnvVariables;
+
+  const missingEnvVariables = requiredEnvVariables.filter(
+    (envVar) => !process.env[envVar],
+  );
 
   if (missingEnvVariables.length > 0) {
-    console.log(`The following environment variables are missing: ${missingEnvVariables.join(', ')}`);
+    console.log(
+      `The following environment variables are missing: ${missingEnvVariables.join(
+        ', ',
+      )}`,
+    );
 
     const answers = await prompt(
-      missingEnvVariables.map(envVar => ({
+      missingEnvVariables.map((envVar) => ({
         type: 'input',
         name: envVar,
         message: `Please enter the value for ${envVar}:`,
-      }))
+      })),
     );
 
     appendToEnvFile(answers);
+  } else {
+    console.log('All required environment variables are already set.');
   }
 }
 
@@ -33,13 +66,17 @@ function appendToEnvFile(envVars: { [key: string]: string }) {
   } else {
     console.log('.env file does not exist. Creating a new one.');
   }
-
-  const updatedEnvFileContent = Object.entries(envVars)
+  const linesToAdd = Object.entries(envVars)
     .map(([key, value]) => `${key}=${value}`)
-    .reduce((content, line) => {
-      const regex = new RegExp(`^${line.split('=')[0]}=`, 'm');
-      return regex.test(content) ? content.replace(regex, line) : content + `\n${line}`;
-    }, envFileContent);
+    .filter(([key]) => !envFileContent.includes(`${key}=`))
+    .join('\n');
 
-  appendFileSync(envFilePath, updatedEnvFileContent);
+  if (linesToAdd.length > 0) {
+    const updatedEnvFileContent =
+      envFileContent === '' ? linesToAdd : `\n${linesToAdd}`;
+    appendFileSync(envFilePath, updatedEnvFileContent);
+    console.log('Updated .env file with new environment variables.');
+  } else {
+    console.log('No new environment variables to add to .env file.');
+  }
 }
