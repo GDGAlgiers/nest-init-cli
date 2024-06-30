@@ -619,6 +619,113 @@ bootstrap();
     }
   }
 
+  async addCookiesStrategy(): Promise<void> {
+    let sessionStrategyContent = `
+import { Injectable } from '@nestjs/common';
+import { PassportSerializer } from '@nestjs/passport';
+import { AuthService } from './auth.service'; // Import your authentication service
+
+@Injectable()
+export class SessionSerializer extends PassportSerializer {
+  constructor(private authService: AuthService) {
+    super();
+  }
+
+  serializeUser(user: any, done: Function) {
+    done(null, user.id); // Serialize user by storing only user id in session
+  }
+
+  async deserializeUser(userId: number, done: Function) {
+    try {
+      const user = await this.authService.findUserById(userId); // Fetch user from database using userId
+      done(null, user); // Deserialize user from stored userId in session
+    } catch (error) {
+      done(error, null);
+    }
+  }
+}
+`;
+    let filename = `cookies.strategy.ts`;
+    filename = `cookies.strategy.ts`;
+    this.createFile(filename, sessionStrategyContent, 'auth');
+    let ProtectedModuleContent = `import { Module } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
+import { ProtectedController } from './protected.controller';
+import { ProtectedService } from './protected.service';
+
+@Module({
+  imports: [PassportModule],
+  controllers: [ProtectedController],
+  providers: [ProtectedService],
+})
+export class ProtectedModule {}`;
+    filename = `protected.module.ts`;
+    this.createFile(filename, ProtectedModuleContent, 'auth/protected');
+    let ProtectedControllerContent = `import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ProtectedService } from './protected.service';
+
+@Controller('protected')
+export class ProtectedController {
+  constructor(private readonly protectedService: ProtectedService) {}
+
+  @Get()
+  @UseGuards(AuthGuard('session')) // Protect this route with session-based authentication
+  getProtectedResource(@Request() req) {
+    // Example: Extract userId from session data
+    const userId = req.user.id;
+    return this.protectedService.getProtectedResource(userId);
+  }
+}`;
+    filename = `protected.controller.ts`;
+    this.createFile(filename, ProtectedControllerContent, 'auth/protected');
+    let ProtectedServiceContent = `import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class ProtectedService {
+  getProtectedResource(userId: number): string {
+    // Example logic to retrieve protected data based on userId
+    return "Protected data for user";
+  }
+}`;
+    filename = `protected.service.ts`;
+    this.createFile(filename, ProtectedServiceContent, 'auth/protected');
+    const mainTsContent = `
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import * as session from 'express-session';
+import * as passport from 'passport';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "2024",
+      resave: false,
+      saveUninitialized: false,
+      cookie: { secure: false, maxAge: 3600000 }, // Set secure to true if using HTTPS
+    }),
+  );
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  await app.listen(3000);
+}
+bootstrap();
+  `;
+
+    const filePath = join(process.cwd(), 'src', 'main.ts');
+
+    try {
+      await fs.writeFile(filePath, mainTsContent, 'utf8');
+      console.log('File main.ts created successfully');
+    } catch (err) {
+      console.error('Error creating file main.ts:', err);
+    }
+  }
+
   async addGithubAuthStrategy(): Promise<void> {
     let filename = ``;
     let githubStrategyContent = `/* eslint-disable prettier/prettier */

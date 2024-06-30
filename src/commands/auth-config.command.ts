@@ -14,7 +14,7 @@ export class AuthConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
     private readonly fileManagerService: FileManagerService,
-    private readonly jwt: AuthFileManager,
+    private readonly authFileManager: AuthFileManager,
     private readonly fileManager: FileManager,
   ) {
     super();
@@ -23,7 +23,7 @@ export class AuthConfigCommand extends CommandRunner {
   async run(): Promise<void> {
     try {
       await this.initAuth();
-      await this.jwt.createServices();
+      await this.authFileManager.createServices();
       await this.fileManagerService.addImportsToAppModule(
         `import { AuthModule } from './auth/auth.module';`,
         `AuthModule`,
@@ -119,7 +119,7 @@ export class AuthConfigCommand extends CommandRunner {
         `GoogleStrategy`,
       );
       // Create Google OAuth strategy
-      await this.jwt.createGoogleAuthStrategy();
+      await this.authFileManager.createGoogleAuthStrategy();
       console.log('Google OAuth added successfully.');
     } catch (error) {
       console.error('Error while adding Google OAuth:', error);
@@ -147,7 +147,7 @@ export class AuthConfigCommand extends CommandRunner {
       await this.packageManagerService.installDependency('passport-facebook');
 
       // Create Facebook strategy
-      await this.jwt.createFacebookAuthStrategy();
+      await this.authFileManager.createFacebookAuthStrategy();
 
       await this.fileManagerService.addImportsToAppModule(
         `import { PassportModule } from '@nestjs/passport';`,
@@ -190,7 +190,7 @@ export class AuthConfigCommand extends CommandRunner {
       await this.packageManagerService.installDependency('passport-github');
       await checkAndPromptEnvVariables('github');
       // Add GitHub strategy to auth module providers
-      await this.jwt.addGithubAuthStrategy();
+      await this.authFileManager.addGithubAuthStrategy();
 
       // Add PassportModule configuration to auth module imports
       await this.fileManagerService.addImportsToAppModule(
@@ -252,7 +252,7 @@ export class AuthConfigCommand extends CommandRunner {
     await this.packageManagerService.installDependency('jsonwebtoken');
     await this.packageManagerService.installDependency('bcryptjs');
     await checkAndPromptEnvVariables('jwt');
-    await this.jwt.addJwtStrategy();
+    await this.authFileManager.addJwtStrategy();
     await this.fileManager.addProviderToAuthModule(
       `import { JwtStrategy } from './jwt.strategy';`,
       'JwtStrategy',
@@ -268,7 +268,7 @@ export class AuthConfigCommand extends CommandRunner {
   private async addSessionAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
     await this.fileManager.initFolder('protected');
-    await this.jwt.addSessionStrategy();
+    await this.authFileManager.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
       `ProtectedModule`,
@@ -288,14 +288,14 @@ export class AuthConfigCommand extends CommandRunner {
   private async addCookiesAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
     await this.fileManager.initFolder('protected');
-    await this.jwt.addSessionStrategy();
+    await this.authFileManager.addCookiesStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
       `ProtectedModule`,
     );
 
     await this.fileManager.addProviderToAuthModule(
-      `import { SessionSerializer } from './session.strategy';`,
+      `import { SessionSerializer } from './cookies.strategy';`,
       'SessionSerializer',
     );
     await this.fileManager.addImportsToAuthModule(
