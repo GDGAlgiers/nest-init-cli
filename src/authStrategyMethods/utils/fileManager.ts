@@ -10,32 +10,53 @@ export class FileManager {
     stringCheck: string,
     providerPath: string,
   ): Promise<string> {
-    let fileData = `${providerPath}\n `;
+    let fileData = '';
     const lineReader = await import('line-reader');
+
     return new Promise((resolve, reject) => {
       let providersFound = false;
+      let providerNameAlreadyAdded = false;
+      let providerPathAdded = false;
 
       lineReader.eachLine(filePath, function (line, last) {
+        if (line.toString().includes(providerPath)) {
+          providerPathAdded = true;
+        }
+        if (
+          line.toString().includes(`${stringCheck}:`) &&
+          line.toString().includes(providerName)
+        ) {
+          providerNameAlreadyAdded = true;
+        }
         if (line.toString().includes(`${stringCheck}:`)) {
           providersFound = true;
         }
         if (providersFound) {
           const provider = line.replace('[', '');
-          fileData += `${stringCheck}:[${providerName}, ${provider.replace(
-            `${stringCheck}:`,
-            '',
-          )}\n`;
+          if (!providerNameAlreadyAdded) {
+            fileData += `${stringCheck}:[${providerName}, ${provider.replace(
+              `${stringCheck}:`,
+              '',
+            )}\n`;
+          } else {
+            fileData += `${stringCheck}:[${provider.replace(
+              `${stringCheck}:`,
+              '',
+            )}\n`;
+          }
           providersFound = false;
         } else {
           fileData += `${line.toString()}\n`;
         }
         if (last) {
+          if (!providerPathAdded) {
+            fileData = `${providerPath}\n` + fileData;
+          }
           resolve(fileData);
         }
       });
     });
   }
-
   async addProviderToAuthModule(providerPath: string, providerName: string) {
     const filePath = process.cwd() + '/src/auth/auth.module.ts';
 
@@ -69,10 +90,5 @@ export class FileManager {
       providerPath,
     );
     await writeFile(filePath, fileData);
-  }
-
-  // function to create a folder in src/auth
-  async initFolder(dir: string): Promise<void> {
-    await this.fileManagerService.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }

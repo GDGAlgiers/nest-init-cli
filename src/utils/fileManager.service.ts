@@ -103,11 +103,13 @@ export class FileManagerService {
     );
     await writeFile(filePath, fileData);
   }
+
   async createDirectoryIfNotExists(path: string): Promise<void> {
     if (!existsSync(path)) {
       await mkdir(path, { recursive: true });
     }
   }
+
   async doesFolderExist(folder: string): Promise<boolean> {
     const folderPath = join(process.cwd(), 'src', folder);
     console.log(folderPath);

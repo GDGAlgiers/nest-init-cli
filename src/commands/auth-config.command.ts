@@ -95,7 +95,7 @@ export class AuthConfigCommand extends CommandRunner {
     try {
       // Check and prompt for required environment variables
       await checkAndPromptEnvVariables('google');
-      await this.fileManager.initFolder('google');
+      await this.initFolder('google');
       googleAuthSpinner.start();
       // Install necessary dependencies
       await this.packageManagerService.installDependency(
@@ -140,7 +140,7 @@ export class AuthConfigCommand extends CommandRunner {
       await checkAndPromptEnvVariables('facebook');
 
       // Initialize the facebook folder
-      await this.fileManager.initFolder('facebook');
+      await this.initFolder('facebook');
       facebookAuthSpinner.start();
 
       // Install necessary dependencies
@@ -180,15 +180,16 @@ export class AuthConfigCommand extends CommandRunner {
       'Installing Github auth dependencies... %s',
     );
     githubAuthSpinner.setSpinnerString('|/-\\');
-    githubAuthSpinner.start();
 
     try {
+      await checkAndPromptEnvVariables('github');
       // Initialize the github folder
-      await this.fileManager.initFolder('github');
+      await this.initFolder('github');
+      githubAuthSpinner.start();
 
       // Install necessary dependencies
       await this.packageManagerService.installDependency('passport-github');
-      await checkAndPromptEnvVariables('github');
+
       // Add GitHub strategy to auth module providers
       await this.authFileManager.addGithubAuthStrategy();
 
@@ -267,7 +268,7 @@ export class AuthConfigCommand extends CommandRunner {
   // function to handle adding express session strategy
   private async addSessionAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
-    await this.fileManager.initFolder('protected');
+    await this.initFolder('protected');
     await this.authFileManager.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
@@ -287,7 +288,7 @@ export class AuthConfigCommand extends CommandRunner {
   // function to handle adding cookies strategy
   private async addCookiesAuth(): Promise<void> {
     await this.packageManagerService.installDependency('express-session');
-    await this.fileManager.initFolder('protected');
+    await this.initFolder('protected');
     await this.authFileManager.addCookiesStrategy();
     await this.fileManagerService.addImportsToAppModule(
       `import { ProtectedModule } from './auth/protected/protected.module';`,
@@ -300,7 +301,7 @@ export class AuthConfigCommand extends CommandRunner {
     );
     await this.fileManager.addImportsToAuthModule(
       `import { PassportModule } from '@nestjs/passport';`,
-      `PassportModule.register()`,
+      `PassportModule`,
     );
   }
 
@@ -335,5 +336,10 @@ export class AuthConfigCommand extends CommandRunner {
         'Authentication module and service already exist. Skipping creation.',
       );
     }
+  }
+
+  // function to create a folder in src/auth
+  async initFolder(dir: string): Promise<void> {
+    await this.fileManagerService.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }
