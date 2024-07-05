@@ -46,10 +46,6 @@ The Repository for Nest-Init CLI made using
 
   - [Setup Authentication Strategies and Services](#setup-authentication-strategies-and-services)
 
-  - [Select Project Type](#select-project-type)
-    - [REST](#rest)
-    - [GraphQL](#graphql)
-
 - [Join our community](#join-our-community)
 - [Contributing](#contributing)
 - [License](#license)
@@ -59,7 +55,7 @@ The Repository for Nest-Init CLI made using
 
 # About The Project
 
-Nest-Init is a powerful CLI tool designed to streamline the creation and configuration of new NestJS projects. It simplifies the setup process, whether you're building a REST API, a GraphQL service, or integrating with various databases. Nest-Init equips you with essential tools to efficiently launch your next NestJS application.
+Nest-Init is a powerful CLI tool designed to streamline the creation and configuration of new NestJS projects. It simplifies the setup process, allowing you to integrate different databases with ORMs and set up authentication efficiently. Nest-Init equips you with essential tools to launch your next NestJS application with ease.
 
 ### Features
 
@@ -68,10 +64,7 @@ Nest-Init is a powerful CLI tool designed to streamline the creation and configu
    - **ODM Integration**: Setup Mongoose for MongoDB with pre-configured models and schemas.
 2. **Authentication Setup**
    - Implement JWT authentication with pre-configured guards and strategies.
-   - Add social authentication for services like Google and Facebook.
-3. **Project Type Selection**
-   - **REST**: Setup a RESTful API with pre-configured controllers, services, and modules.
-   - **GraphQL**: Initialize a GraphQL server with schema-first or code-first approach, including ready-to-use resolvers and modules.
+   - Add social authentication for services like Google, Facebook and Github.
 
 ### Built with
 
@@ -133,8 +126,7 @@ After initializing the CLI, you will see the following menu options:
 
 ```bash
 1. Configure ORM with Database
-2. Setup Authentication Services and Strategies
-3. Select Project Type
+2. Setup Authentication Strategies and Services
 ```
 
 Choose the option that suits your project needs and follow the prompts to configure your NestJS application accordingly.
@@ -326,12 +318,12 @@ nest-init install-drizzle -m
 nest-init install-drizzle --mongodb
 `
 
-## Setup Authentication Services and Strategies
+## Setup Authentication Strategies and Services
 
 Nest-Init provides a guided questionnaire to configure authentication services and strategies for your NestJS project. To begin, run the following command:
 
 ```bash
-nest-init configure-auth
+nest-init add-auth
 ```
 
 This command initiates a series of prompts where you can select the options that best fit your project requirements:
@@ -342,7 +334,7 @@ This command initiates a series of prompts where you can select the options that
 
 ### **Social Authentication**
 
-- Implement authentication using Facebook and GoogleOAuth services.
+- Implement authentication using Facebook, Google, and Github OAuth services.
 
 ### **Resetting Password**
 
@@ -359,30 +351,6 @@ Implement stateless authentication using JWTs, which are compact tokens verified
 **Sessions**
 
 Supports session-based authentication for managing server-side session states, ideal for applications requiring stateful interactions with clients.
-
-## Select Project Type
-
-Nest-Init empowers you to define your API architecture by executing the following command:
-
-```bash
-nest-init config-api <option>
-```
-
-### REST
-
-Configure your project to use REST, a widely-used architectural style for designing networked applications based on CRUD operations over HTTP, by executing the following command:
-
-```bash
-nest-init config-api --rest
-```
-
-### GraphQL
-
-Configure your project to use GraphQL, a query language for APIs that provides a more efficient and flexible approach to data fetching, by executing the following command:
-
-```bash
-nest-init config-api --graphql
-```
 
 # Join our Community
 
