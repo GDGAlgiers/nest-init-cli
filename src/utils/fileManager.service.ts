@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'fs/promises';
 export class FileManagerService {
   
 private async readByLineAsyncAndUpdate(filePath:string,providerName:string,stringCheck:string,providerPath:string):Promise<string> {
-  let fileData = `${providerPath}\n `;
+  let fileData = `${providerPath}\n`;
   const lineReader = await import('line-reader')
   return new Promise((resolve, reject) => {
     let providersFound = false;
@@ -14,8 +14,8 @@ private async readByLineAsyncAndUpdate(filePath:string,providerName:string,strin
         providersFound = true;
       }
       if (providersFound) {
-          const provider = line.replace('[','')
-          fileData += `${stringCheck}:[${providerName}, ${provider.replace(`${stringCheck}:`,'')}\n`;
+          const provider = line.replace('[','').trim()
+          fileData += `  ${stringCheck}:[${providerName}, ${provider.replace(`${stringCheck}:`,'')}\n`;
         providersFound = false;
       }else{
 

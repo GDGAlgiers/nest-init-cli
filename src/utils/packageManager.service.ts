@@ -1,6 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
+import { exec } from 'child_process';
 import { asyncExecuteCommand } from './asyncExecuteCommand';
 
 @Injectable()
@@ -12,18 +13,18 @@ export class PackageManagerService {
     const files = await fs.promises.readdir(process.cwd());
     const hasNpmLockFile = files.includes('package-lock.json');
     if (hasNpmLockFile) {
-      return 'npm'
+      return 'npm';
     }
     const hasYarnLockFile = files.includes('yarn.lock');
     if (hasYarnLockFile) {
-      return 'yarn'
+      return 'yarn';
     }
 
     const hasPnpmLockFile = files.includes('pnpm-lock.yaml');
     if (hasPnpmLockFile) {
-      return 'pnpm'
+      return 'pnpm';
     }
-    
+
     return 'unknown';
   }
 
@@ -51,5 +52,34 @@ export class PackageManagerService {
     } finally {
         this.isInstalling = false;
     }
+  }
+
+  async installDependencyVersion(
+    dependency: string,
+    version: string,
+    dev = false,
+  ): Promise<void> {
+    const packageManager = await this.detectPackageManager();
+    const versionArg = version ? `@${version}` : '';
+    const command = `${packageManager} add ${dependency}${versionArg} ${
+      dev ? '--save-dev' : ''
+    }`;
+
+    return new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error installing ${dependency}@${version}:`, stderr);
+          reject(
+            new Error(`Error installing ${dependency}@${version}: ${stderr}`),
+          );
+        } else {
+          console.log(
+            `${dependency}@${version} installed successfully:`,
+            stdout,
+          );
+          resolve();
+        }
+      });
+    });
   }
 }
