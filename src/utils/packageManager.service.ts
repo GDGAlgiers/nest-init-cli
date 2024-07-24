@@ -1,10 +1,14 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { exec } from 'child_process';
+import { asyncExecuteCommand } from './asyncExecuteCommand';
 import * as fs from 'fs';
 
 @Injectable()
 export class PackageManagerService {
+  private dependencyQueue: { dependency: string; dev: boolean }[] = [];
+  private isInstalling = false;
+
   private async detectPackageManager(): Promise<string> {
     const files = await fs.promises.readdir(process.cwd());
     const hasNpmLockFile = files.includes('package-lock.json');
@@ -42,33 +46,37 @@ export class PackageManagerService {
     return allDependencies.hasOwnProperty(dependency);
   }
 
-  async installDependency(dependency: string, dev = false): Promise<void> {
-    if (await this.dependencyExists(dependency)) {
-      // console.log(`${dependency} already exists in package.json.`);
-      return;
-    }
+  async installDependency(dependency: string, dev = false) {
+    this.dependencyQueue.push({ dependency, dev });
 
-    const packageManager = await this.detectPackageManager();
-    if (packageManager === 'unknown') {
-      throw new Error('Package manager could not be detected.');
+    if (!this.isInstalling) {
+      this.isInstalling = true;
+      await this.processQueue();
     }
+  }
 
-    const command = `${packageManager} ${
-      packageManager === 'npm' ? 'install' : 'add'
-    } ${dependency} ${
-      dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
-    }`;
-    return new Promise((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error installing ${dependency}:`, stderr);
-          reject(new Error(`Error installing ${dependency}: ${stderr}`));
-        } else {
-          console.log(`${dependency} installed successfully:`, stdout);
-          resolve();
-        }
-      });
-    });
+  private async processQueue() {
+    try {
+      const packageManager = await this.detectPackageManager();
+      if (packageManager === 'unknown') {
+        throw new Error('Package manager could not be detected.');
+      }
+
+      while (this.dependencyQueue.length > 0) {
+        const { dependency, dev } = this.dependencyQueue.shift()!;
+        const command = `${packageManager} ${
+          packageManager === 'npm' ? 'install' : 'add'
+        } ${dependency} ${
+          dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
+        }`;
+        await asyncExecuteCommand(command);
+        // console.log(`${dependency} installed successfully.`);
+      }
+    } catch (error) {
+      console.error(`Failed to install dependencies:`, error);
+    } finally {
+      this.isInstalling = false;
+    }
   }
 
   async installDependencyVersion(

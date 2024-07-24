@@ -32,7 +32,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: (configService: ConfigService) => ({
         type: 'mongo',
         clientUrl: configService.get<string>('MONGODB_URI'),
-        dbName: configService.get<string>('MONGODB_DB'),
+        dbName: configService.get<string>('MONGODB_DB') | 'MONGODB_DATABASE',
         entities: ['./dist/entities'],
         entitiesTs: ['./src/entities'],
       }),
