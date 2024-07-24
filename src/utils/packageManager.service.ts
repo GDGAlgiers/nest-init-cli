@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { exec } from 'child_process';
 import { asyncExecuteCommand } from './asyncExecuteCommand';
+import * as fs from 'fs';
 
 @Injectable()
 export class PackageManagerService {
@@ -23,9 +24,27 @@ export class PackageManagerService {
     const hasPnpmLockFile = files.includes('pnpm-lock.yaml');
     if (hasPnpmLockFile) {
       return 'pnpm';
+      return 'pnpm';
     }
 
     return 'unknown';
+  }
+
+  private async dependencyExists(dependency: string): Promise<boolean> {
+    const packageJsonPath = `${process.cwd()}/package.json`;
+    if (!fs.existsSync(packageJsonPath)) {
+      return false;
+    }
+
+    const packageJson = JSON.parse(
+      await fs.promises.readFile(packageJsonPath, 'utf-8'),
+    );
+    const allDependencies = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
+
+    return allDependencies.hasOwnProperty(dependency);
   }
 
   async installDependency(dependency: string, dev = false) {
@@ -39,12 +58,22 @@ export class PackageManagerService {
 
   private async processQueue() {
     try {
+      if (await this.dependencyExists(dependency)) {
+        // console.log(`${dependency} already exists in package.json.`);
+        return;
+      }
+
       const packageManager = await this.detectPackageManager();
+      if (packageManager === 'unknown') {
+        throw new Error('Package manager could not be detected.');
+      }
 
       while (this.dependencyQueue.length > 0) {
         const { dependency, dev } = this.dependencyQueue.shift()!;
-        const command = `${packageManager} install ${dependency} ${
-          dev ? '--save-dev' : ''
+        const command = `${packageManager} ${
+          packageManager === 'npm' ? 'install' : 'install'
+        } ${dependency} ${
+          dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
         }`;
         await asyncExecuteCommand(command);
         // console.log(`${dependency} installed successfully.`);
