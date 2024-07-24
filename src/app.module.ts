@@ -16,7 +16,7 @@ import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
  
 
 @Module({
-providers:[SequelizeConfigCommand, MikroOrmConfigCommand.DrizzleConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, MongooseConfigCommand,PackageManagerService,CommandExecutionService, FileManagerService],
+providers:[SequelizeConfigCommand, MikroOrmConfigCommand,DrizzleConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, MongooseConfigCommand,PackageManagerService,CommandExecutionService, FileManagerService],
 imports:[ CommandRunnerModule],
 })
 export class AppModule {}
