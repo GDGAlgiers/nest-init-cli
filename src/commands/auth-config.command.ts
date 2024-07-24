@@ -1,135 +1,362 @@
 /* eslint-disable prettier/prettier */
 import { Command, CommandRunner } from 'nest-commander';
 import { Spinner } from 'cli-spinner';
-import { join } from 'path';
 import { prompt } from 'inquirer';
-import { writeFile } from 'fs/promises';
-import { exec } from 'child_process';
 import { PackageManagerService } from '../utils/packageManager.service';
-import { FileManagerService } from 'src/utils/fileManager.service';
+import { FileManagerService } from '../utils/fileManager.service'; // Adjust path based on actual file location
+import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adjust path based on actual file location
+import { FileManager } from '../authStrategyMethods/utils/fileManager';
+import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { generateUserResource } from 'src/authStrategyMethods/utils/generate-user-resource';
 
-@Command({ name: 'add-auth', description: 'add auth services' })
+@Command({ name: 'add-auth', description: 'Add authentication services' })
 export class AuthConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
     private readonly fileManagerService: FileManagerService,
+    private readonly authFileManager: AuthFileManager,
+    private readonly fileManager: FileManager,
   ) {
     super();
   }
 
-  async run(passedParams: string[]): Promise<void> {
-    const spinner = new Spinner('Processing.. %s');
-    spinner.setSpinnerString('|/-\\');
-
+  async run(): Promise<void> {
     try {
-      // Check if the user folder exists
-      const folderExists = await this.fileManagerService.doesUserFolderExist();
-      console.log(`User folder exists: ${folderExists}`);
-      
+      await this.initAuth();
+      await this.authFileManager.createServices();
+      await this.fileManagerService.addImportsToAppModule(
+        `import { AuthModule } from './auth/auth.module';`,
+        `AuthModule`,
+      );
+      const folderExists = await this.fileManagerService.doesFolderExist(
+        'users',
+      );
       if (!folderExists) {
-        console.log('User folder does not exist. Generating user resource...');
-        
-        await new Promise<void>((resolve, reject) => {
-          exec('npx nest g resource user', (error, stdout, stderr) => {
-            if (error) {
-              console.error(`Error generating user resource: ${error.message}`);
-              reject(error);
-              return
-            }
-            if (stderr) {
-              console.error(`Error output: ${stderr}`);
-              reject(new Error(stderr));
-              return;
-            }
-            console.log(`User resource generated: ${stdout}`);
-            resolve();
-          });
-        });
+        await generateUserResource();
       }
-    await this.installDependencies();
-    await this.initauth();
+      // install passport.js dependencies
+      await this.installDependencies();
       const { addAuth } = await prompt({
         type: 'confirm',
         name: 'addAuth',
-        message: 'Do you want to add auth (login and register)?',
+        message:
+          'Would you like to include authentication features such as login and registration in your project?',
       });
-
       if (addAuth) {
-        const { authType } = await prompt({
-          type: 'list',
-          name: 'authType',
-          message: 'Choose auth type:',
-          choices: ['JWT', 'Cookies', 'Session'],
-        });
-           
-        // Process based on the selected auth type
-        console.log(`Selected auth type: ${authType}`);
-        if (authType === 'JWT') {
-            this.packageManagerService.installDependency('@nestjs/jwt');
-            this.packageManagerService.installDependency('passport-jwt');
-            this.packageManagerService.installDependency('jsonwebtoken');
-          } else if (authType === 'Cookies' || authType === 'Session') {
-            this.packageManagerService.installDependency('passport-local');
-          }
-        
+        await this.runLocalAuth();
       }
-
       const { addGoogleAuth } = await prompt({
         type: 'confirm',
         name: 'addGoogleAuth',
-        message: 'Do you want to add auth with Google?',
+        message:
+          'Would you like to integrate authentication using Google in your project?',
       });
 
       if (addGoogleAuth) {
-        console.log('Adding Google auth...');
-        // Process Google auth setup
-        this.packageManagerService.installDependency('passport-google-oauth20');
-
+        await this.runGoogleAuth();
       }
 
       const { addFbAuth } = await prompt({
         type: 'confirm',
         name: 'addFbAuth',
-        message: 'Do you want to add auth with Facebook?',
+        message:
+          'Would you like to integrate authentication using Facebook in your project?',
       });
 
       if (addFbAuth) {
-        console.log('Adding Facebook auth...');
-        // Process Facebook auth setup
-        this.packageManagerService.installDependency('passport-facebook');
-
+        await this.runFacebookAuth();
       }
+      const { addGithubAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGithubAuth',
+        message:
+          'Would you like to integrate authentication using Github in your project?',
+      });
 
-      // Example of using the services and fs/promises
-      spinner.start();
-      const path = join(__dirname, 'path-to-file');
-      const content = 'File content here';
-
-      await writeFile(path, content);
-
-      // Example of using PackageManagerService and FileManagerService
-
-      console.log('Auth services added successfully');
+      if (addGithubAuth) {
+        await this.runGithubAuth();
+      }
+      console.log('Authentication services have been successfully added.');
     } catch (error) {
-      console.error('Error while adding auth services:', error);
+      console.error(
+        'Error occurred while configuring authentication services:',
+        error,
+      );
     } finally {
-      // Stop the spinner
-      spinner.stop(true);
     }
   }
+  // function to add Google OAuth Service
+  private async runGoogleAuth(): Promise<void> {
+    const googleAuthSpinner = new Spinner(
+      'Installing Google auth dependencies... %s',
+    );
+    googleAuthSpinner.setSpinnerString('|/-\\');
+
+    try {
+      // Check and prompt for required environment variables
+      await checkAndPromptEnvVariables('google');
+      await this.initFolder('google');
+      googleAuthSpinner.start();
+      // Install necessary dependencies
+      await this.packageManagerService.installDependency(
+        'passport-google-oauth20',
+      );
+
+      await this.fileManagerService.addImportsToAppModule(
+        `import { PassportModule } from '@nestjs/passport';`,
+        `PassportModule.register({ defaultStrategy: 'google' })`,
+      );
+
+      // Add GoogleAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { GoogleAuthModule } from './auth/google/googleauth.module';`,
+        `GoogleAuthModule`,
+      );
+
+      // Add Google strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { GoogleStrategy } from './auth/google/google.strategy';`,
+        `GoogleStrategy`,
+      );
+      // Create Google OAuth strategy
+      await this.authFileManager.createGoogleAuthStrategy();
+      console.log('Google OAuth added successfully.');
+    } catch (error) {
+      console.error('Error while adding Google OAuth:', error);
+    } finally {
+      googleAuthSpinner.stop(true);
+    }
+  }
+
+  // function to add Facebook OAuth
+  private async runFacebookAuth(): Promise<void> {
+    const facebookAuthSpinner = new Spinner(
+      'Installing Facebook auth dependencies... %s',
+    );
+    facebookAuthSpinner.setSpinnerString('|/-\\');
+
+    try {
+      // Check and prompt for required environment variables
+      await checkAndPromptEnvVariables('facebook');
+
+      // Initialize the facebook folder
+      await this.initFolder('facebook');
+      facebookAuthSpinner.start();
+
+      // Install necessary dependencies
+      await this.packageManagerService.installDependency('passport-facebook');
+
+      // Create Facebook strategy
+      await this.authFileManager.createFacebookAuthStrategy();
+
+      await this.fileManagerService.addImportsToAppModule(
+        `import { PassportModule } from '@nestjs/passport';`,
+        `PassportModule.register({ defaultStrategy: 'facebook' })`,
+      );
+
+      // Add FacebookAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { FacebookAuthModule } from './auth/facebook/facebookauth.module';`,
+        `FacebookAuthModule`,
+      );
+
+      // Add Facebook strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { FacebookStrategy } from './auth/facebook/facebook.strategy';`,
+        `FacebookStrategy`,
+      );
+
+      console.log('Facebook OAuth added successfully.');
+    } catch (error) {
+      console.error('Error while adding Facebook OAuth:', error);
+    } finally {
+      facebookAuthSpinner.stop(true);
+    }
+  }
+
+  // function to add github auth
+  private async runGithubAuth(): Promise<void> {
+    const githubAuthSpinner = new Spinner(
+      'Installing Github auth dependencies... %s',
+    );
+    githubAuthSpinner.setSpinnerString('|/-\\');
+
+    try {
+      await checkAndPromptEnvVariables('github');
+      // Initialize the github folder
+      await this.initFolder('github');
+      githubAuthSpinner.start();
+
+      // Install necessary dependencies
+      await this.packageManagerService.installDependency('passport-github');
+
+      // Add GitHub strategy to auth module providers
+      await this.authFileManager.addGithubAuthStrategy();
+
+      // Add PassportModule configuration to auth module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { PassportModule } from '@nestjs/passport';`,
+        `PassportModule.register({ defaultStrategy: 'github' })`,
+      );
+
+      // Add GithubAuthModule to app module imports
+      await this.fileManagerService.addImportsToAppModule(
+        `import { GithubAuthModule } from './auth/github/githubauth.module';`,
+        `GithubAuthModule`,
+      );
+
+      // Add Github strategy provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { GithubStrategy } from './auth/github/github.strategy';`,
+        `GithubStrategy`,
+      );
+
+      console.log('Github OAuth added successfully.');
+    } catch (error) {
+      console.error('Error while adding Github OAuth:', error);
+    } finally {
+      githubAuthSpinner.stop(true);
+    }
+  }
+
+  // function to add local auth (email/password)
+  private async runLocalAuth(): Promise<void> {
+    const { authType } = await prompt({
+      type: 'list',
+      name: 'authType',
+      message: 'Choose auth type:',
+      choices: ['JWT', 'Cookies', 'Session'],
+    });
+
+    console.log(`Selected auth type: ${authType}`);
+    const authSpinner = new Spinner('Installing auth dependencies... %s');
+    authSpinner.setSpinnerString('|/-\\');
+    authSpinner.start();
+
+    await this.packageManagerService.installDependency('passport-local');
+
+    if (authType === 'JWT') {
+      await this.addJwtAuth();
+    } else if (authType === 'Session') {
+      await this.addSessionAuth();
+    } else {
+      this.addCookiesAuth();
+    }
+
+    authSpinner.stop(true);
+  }
+
+  // function to handle adding JWT strategy
+  private async addJwtAuth(): Promise<void> {
+    await this.packageManagerService.installDependency('@nestjs/jwt');
+    await this.packageManagerService.installDependency('passport-jwt');
+    await this.packageManagerService.installDependency('jsonwebtoken');
+    await this.packageManagerService.installDependency('bcryptjs');
+    await checkAndPromptEnvVariables('jwt');
+    await this.authFileManager.addJwtStrategy();
+    await this.fileManager.addProviderToAuthModule(
+      `import { JwtStrategy } from './jwt.strategy';`,
+      'JwtStrategy',
+    );
+    await this.fileManager.addProviderToAuthModule(
+      `import { UsersService } from 'src/users/users.service';`,
+      'UsersService',
+    );
+    // await this.fileManager.addImportsToAuthModule(
+    //   `import { JwtModule } from '@nestjs/jwt';`,
+    //   `JwtModule.register({ secret: process.env.JWT_SECRET || "2024", })`,
+    // );
+    await this.fileManager.addImportsToAuthModule(
+      `import { MailerModule } from '@nestjs-modules/mailer';`,
+      `MailerModule.forRoot({
+      transport: {
+        host: 'smtp.example.com',
+        port: 587,
+        auth: {
+          user: 'username',
+          pass: 'password',
+        },
+      },
+    })`,
+    );
+    console.log('you should fix user services to use jwt strategy');
+  }
+
+  // function to handle adding express session strategy
+  private async addSessionAuth(): Promise<void> {
+    await this.packageManagerService.installDependency('express-session');
+    await this.initFolder('protected');
+    await this.authFileManager.addSessionStrategy();
+    await this.fileManagerService.addImportsToAppModule(
+      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `ProtectedModule`,
+    );
+
+    await this.fileManager.addProviderToAuthModule(
+      `import { SessionSerializer } from './session.strategy';`,
+      'SessionSerializer',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { PassportModule } from '@nestjs/passport';`,
+      `PassportModule.register({ session: true })`,
+    );
+  }
+
+  // function to handle adding cookies strategy
+  private async addCookiesAuth(): Promise<void> {
+    await this.packageManagerService.installDependency('express-session');
+    await this.initFolder('protected');
+    await this.authFileManager.addCookiesStrategy();
+    await this.fileManagerService.addImportsToAppModule(
+      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `ProtectedModule`,
+    );
+
+    await this.fileManager.addProviderToAuthModule(
+      `import { SessionSerializer } from './cookies.strategy';`,
+      'SessionSerializer',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { PassportModule } from '@nestjs/passport';`,
+      `PassportModule`,
+    );
+  }
+
+  // function to install passport.js dependencies
   private installDependencies(): void {
-    const spinner = new Spinner('Installing dependencies  ... %s');
+    const spinner = new Spinner('Installing Passport.js dependencies  ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('passport');
     this.packageManagerService.installDependency('@nestjs/passport');
+    this.packageManagerService.installDependency('@nestjs-modules/mailer');
     spinner.stop(true);
-    console.log('Prisma installed successfully!');
+    console.log('Passport.js dependencies installed successfully.');
   }
-  private initauth(): void {
-    console.log('Initializing authentication service and module.');
-    
-    exec('npx nest g module auth')
-    exec('npx nest g service auth')
+
+  // creates the auth directory if it doesn't exist
+  private async initAuth(): Promise<void> {
+    console.log('Initializing Authentication service and module.');
+    const authExists = await this.fileManagerService.doesFolderExist('auth');
+    if (!authExists) {
+      try {
+        await this.fileManagerService.createDirectoryIfNotExists('src/auth');
+      } catch (err) {
+        console.error(
+          'Error while initializing authentication service and module:',
+          err,
+        );
+        throw err;
+      }
+    } else {
+      console.log(
+        'Authentication module and service already exist. Skipping creation.',
+      );
+    }
+  }
+
+  // function to create a folder in src/auth
+  async initFolder(dir: string): Promise<void> {
+    await this.fileManagerService.createDirectoryIfNotExists(`src/auth/${dir}`);
   }
 }
