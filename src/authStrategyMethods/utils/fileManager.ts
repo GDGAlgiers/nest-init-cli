@@ -1,10 +1,9 @@
 /* eslint-disable prettier/prettier */
-import { existsSync } from 'fs';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-import * as path from 'path';
+import { writeFile } from 'fs/promises';
+import { FileManagerService } from 'src/utils/fileManager.service';
 
-export class FileManagerService {
+export class FileManager {
+  constructor(private readonly fileManagerService: FileManagerService) {}
   private async readByLineAsyncAndUpdate(
     filePath: string,
     providerName: string,
@@ -58,9 +57,8 @@ export class FileManagerService {
       });
     });
   }
-
-  async addProviderToAppModule(providerPath: string, providerName: string) {
-    const filePath = process.cwd() + '/src/app.module.ts';
+  async addProviderToAuthModule(providerPath: string, providerName: string) {
+    const filePath = process.cwd() + '/src/auth/auth.module.ts';
 
     const fileData: string = await this.readByLineAsyncAndUpdate(
       filePath,
@@ -71,29 +69,19 @@ export class FileManagerService {
     await writeFile(filePath, fileData);
   }
 
-  async addImportsToAppModule(providerPath: string, providerName: string) {
-    const filePath = path.join(process.cwd(), 'src/app.module.ts');
+  async addImportsToAuthModule(providerPath: string, providerName: string) {
+    const filePath = process.cwd() + '/src/auth/auth.module.ts';
 
-    // Check if the providerPath is already in the file
-    const fileContent = await readFile(filePath, 'utf8');
-    if (fileContent.includes(providerPath)) {
-      console.error(`Provider path '${providerPath}' is already added.`);
-    }
-
-    try {
-      const fileData: string = await this.readByLineAsyncAndUpdate(
-        filePath,
-        providerName,
-        'imports',
-        providerPath,
-      );
-      await writeFile(filePath, fileData);
-    } catch (error) {
-      console.error(error.message);
-    }
+    const fileData: string = await this.readByLineAsyncAndUpdate(
+      filePath,
+      providerName,
+      'imports',
+      providerPath,
+    );
+    await writeFile(filePath, fileData);
   }
-  async addcontrollersToAppModule(providerPath: string, providerName: string) {
-    const filePath = process.cwd() + '/src/app.module.ts';
+  async addControllersToAuthModule(providerPath: string, providerName: string) {
+    const filePath = process.cwd() + '/src/auth/auth.module.ts';
 
     const fileData: string = await this.readByLineAsyncAndUpdate(
       filePath,
@@ -102,18 +90,5 @@ export class FileManagerService {
       providerPath,
     );
     await writeFile(filePath, fileData);
-  }
-
-  async createDirectoryIfNotExists(path: string): Promise<void> {
-    if (!existsSync(path)) {
-      await mkdir(path, { recursive: true });
-    }
-  }
-
-  async doesFolderExist(folder: string): Promise<boolean> {
-    const folderPath = join(process.cwd(), 'src', folder);
-    console.log(folderPath);
-    // Check if the folder exists
-    return existsSync(folderPath);
   }
 }

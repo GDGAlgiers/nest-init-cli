@@ -6,8 +6,7 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
-import readline from 'readline';
-import * as fs from 'fs';
+
 @Command({ name: 'install-prisma', description: 'Install prisma' })
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
@@ -53,11 +52,13 @@ export class PrismaConfigCommand extends CommandRunner {
           this.prismaServiceContenu,
         );
         const importPrisma = `import { PrismaService } from './prisma.service'; `;
-        const prismaProvider ="PrismaService"
+        const prismaProvider = 'PrismaService';
 
-       await this.fileManagerService.addProviderToAppModule(importPrisma,prismaProvider);
-        console.log("prisma configured succefully")
-       
+        await this.fileManagerService.addProviderToAppModule(
+          importPrisma,
+          prismaProvider,
+        );
+        console.log('prisma configured succefully');
       } else {
         console.log(
           'Please provide a valid flag -m for mongodb and -psql for postgresql',
