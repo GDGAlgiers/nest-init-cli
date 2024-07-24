@@ -210,6 +210,11 @@ export class AuthConfigCommand extends CommandRunner {
         `import { GithubStrategy } from './auth/github/github.strategy';`,
         `GithubStrategy`,
       );
+      // Add config service provider to app module
+      await this.fileManagerService.addProviderToAppModule(
+        `import { ConfigService } from '@nestjs/config';`,
+        `ConfigService`,
+      );
 
       console.log('Github OAuth added successfully.');
     } catch (error) {
@@ -234,6 +239,7 @@ export class AuthConfigCommand extends CommandRunner {
     authSpinner.start();
 
     await this.packageManagerService.installDependency('passport-local');
+    await this.packageManagerService.installDependency('@types/passport-local');
 
     if (authType === 'JWT') {
       await this.addJwtAuth();
