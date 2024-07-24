@@ -142,6 +142,10 @@ export class DrizzleModule {}
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('better-sqlite3');
+    await this.packageManagerService.installDependency(
+      '@types/better-sqlite3',
+      true,
+    );
     spinner.stop(true);
     console.log('SQLite dependencies installed successfully');
   }
@@ -218,7 +222,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
     this.sqlite.close();
   }
 }
-  `;
+ `;
     } else if (flag === '-psql' || flag === '--postgresql') {
       this.drizzleServiceContent = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/node-postgres';
