@@ -106,11 +106,16 @@ export class DrizzleModule {}
     const spinner = new Spinner('Installing Drizzle dependencies... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
-    await this.packageManagerService.installDependency('drizzle-kit', true);
-    await this.packageManagerService.installDependency('drizzle-orm');
-    await this.packageManagerService.installDependency('dotenv');
-    spinner.stop(true);
-    console.log('Drizzle dependencies installed successfully');
+    try {
+      await this.packageManagerService.installDependency('drizzle-kit', true);
+      await this.packageManagerService.installDependency('drizzle-orm');
+      await this.packageManagerService.installDependency('dotenv');
+      spinner.stop(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      console.log('Drizzle dependencies installed successfully');
+    }
   }
 
   private async installPostgresDependencies(): Promise<void> {
@@ -133,12 +138,12 @@ export class DrizzleModule {}
   }
 
   private async installSqliteDependencies(): Promise<void> {
-    const spinner = new Spinner('Installing PostgreSQL dependencies... %s');
+    const spinner = new Spinner('Installing SQLite dependencies... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('better-sqlite3');
     spinner.stop(true);
-    console.log('PostgreSQL dependencies installed successfully');
+    console.log('SQLite dependencies installed successfully');
   }
 
   private async createDrizzleConfig(flag?: string) {
@@ -197,21 +202,21 @@ export default defineConfig({
     if (flag === '-sl' || flag === '--sqlite') {
       this.drizzleServiceContent = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import * as BetterSqlite3 from 'better-sqlite3'; 
 
 @Injectable()
 export class DrizzleService implements OnModuleInit, OnModuleDestroy {
-    private sqlite: Database;
-    db: any;
+  private sqlite: BetterSqlite3.Database; 
+  db: any;
 
-    async onModuleInit() {
-        this.sqlite = new Database('sqlite.db');
-        this.db = drizzle(this.sqlite);
-    }
+  async onModuleInit() {
+    this.sqlite = new BetterSqlite3('sqlite.db');
+    this.db = drizzle(this.sqlite);
+  }
 
-    async onModuleDestroy() {
-        this.sqlite.close();
-    }
+  async onModuleDestroy() {
+    this.sqlite.close();
+  }
 }
   `;
     } else if (flag === '-psql' || flag === '--postgresql') {

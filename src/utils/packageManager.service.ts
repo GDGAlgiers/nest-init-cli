@@ -32,25 +32,27 @@ export class PackageManagerService {
     this.dependencyQueue.push({ dependency, dev });
 
     if (!this.isInstalling) {
-        this.isInstalling = true;
-        await this.processQueue();
+      this.isInstalling = true;
+      await this.processQueue();
     }
   }
 
   private async processQueue() {
     try {
-        const packageManager = await this.detectPackageManager();
+      const packageManager = await this.detectPackageManager();
 
-        while (this.dependencyQueue.length > 0) {
-            const { dependency, dev } = this.dependencyQueue.shift()!;
-            const command = `${packageManager} add ${dependency} ${dev ? '--save-dev' : ''}`;
-            await asyncExecuteCommand(command);
-            // console.log(`${dependency} installed successfully.`);
-        }
+      while (this.dependencyQueue.length > 0) {
+        const { dependency, dev } = this.dependencyQueue.shift()!;
+        const command = `${packageManager} install ${dependency} ${
+          dev ? '--save-dev' : ''
+        }`;
+        await asyncExecuteCommand(command);
+        // console.log(`${dependency} installed successfully.`);
+      }
     } catch (error) {
-        console.error(`Failed to install dependencies:`, error);
+      console.error(`Failed to install dependencies:`, error);
     } finally {
-        this.isInstalling = false;
+      this.isInstalling = false;
     }
   }
 
