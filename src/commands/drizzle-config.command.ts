@@ -216,7 +216,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: "postgresql://test:test@localhost:5432/test",
     });
     this.db = drizzle(this.pool);
     await this.pool.connect();
@@ -239,11 +239,18 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
   db: any;
 
   async onModuleInit() {
+    const {
+      DB_HOST = '127.0.0.1',
+      DB_USER = 'test',
+      DB_PASSWORD = 'test',
+      DB_NAME = 'test',
+    } = {};
+
     this.connection = await createConnection({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+        host: DB_HOST,
+        user: DB_USER,
+        password: DB_PASSWORD,
+        database: DB_NAME,
     });
     this.db = drizzle(this.connection);
   }
