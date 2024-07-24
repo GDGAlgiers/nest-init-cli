@@ -1,6 +1,5 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
 import { exec } from 'child_process';
 import { asyncExecuteCommand } from './asyncExecuteCommand';
 import * as fs from 'fs';
@@ -58,11 +57,6 @@ export class PackageManagerService {
 
   private async processQueue() {
     try {
-      if (await this.dependencyExists(dependency)) {
-        // console.log(`${dependency} already exists in package.json.`);
-        return;
-      }
-
       const packageManager = await this.detectPackageManager();
       if (packageManager === 'unknown') {
         throw new Error('Package manager could not be detected.');
@@ -71,7 +65,7 @@ export class PackageManagerService {
       while (this.dependencyQueue.length > 0) {
         const { dependency, dev } = this.dependencyQueue.shift()!;
         const command = `${packageManager} ${
-          packageManager === 'npm' ? 'install' : 'install'
+          packageManager === 'npm' ? 'install' : 'add'
         } ${dependency} ${
           dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
         }`;

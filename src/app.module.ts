@@ -16,6 +16,7 @@ import { AppController } from './app.controller';
 import { FileManager } from './authStrategyMethods/utils/fileManager';
 import { AppService } from './app.service';
 import { AuthFileManager } from './authStrategyMethods/authFileManager';
+import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
 
 @Module({
   providers: [
@@ -28,21 +29,12 @@ import { AuthFileManager } from './authStrategyMethods/authFileManager';
     FileManager,
     AppService,
     AuthFileManager,
+    MikroOrmConfigCommand,
+    DrizzleConfigCommand,
+    MongooseConfigCommand,
+    CommandExecutionService,
   ],
   imports: [CommandRunnerModule],
   controllers: [AppController],
-
-  providers: [
-    SequelizeConfigCommand,
-    MikroOrmConfigCommand,
-    DrizzleConfigCommand,
-    PrismaConfigCommand,
-    TypeOrmConfigCommand,
-    MongooseConfigCommand,
-    PackageManagerService,
-    CommandExecutionService,
-    FileManagerService,
-  ],
-  imports: [CommandRunnerModule],
 })
 export class AppModule {}

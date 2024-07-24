@@ -20,7 +20,6 @@ const requiredPostgresEnvVariables = [
   'POSTGRES_PASSWORD',
   'POSTGRES_DB',
 ];
-const requiredMongoEnvVariables = ['MONGODB_URI'];
 const requiredDrizzlePostgreVariables = ['DB_URL'];
 const requiredDrizzleMysqlVariables = [
   'DB_HOST',
@@ -47,8 +46,12 @@ export async function checkAndPromptEnvVariables(
     | 'google'
     | 'facebook'
     | 'jwt'
-    | 'session',
-  dbType: 'mysql' | 'postgres' | 'mongodb' | 'dmysql' | 'dpostgres',
+    | 'session'
+    | 'mysql'
+    | 'postgres'
+    | 'mongodb'
+    | 'dmysql'
+    | 'dpostgres',
 ) {
   const requiredEnvVariables =
     service === 'mysql'
@@ -65,6 +68,12 @@ export async function checkAndPromptEnvVariables(
       ? requiredJwtVariables
       : service === 'session'
       ? requiredSessionVariables
+      : service === 'mongodb'
+      ? requiredMongoEnvVariables
+      : service === 'dmysql'
+      ? requiredDrizzleMysqlVariables
+      : service === 'dpostgres'
+      ? requiredDrizzlePostgreVariables
       : requiredMongoEnvVariables;
 
   const missingEnvVariables = requiredEnvVariables.filter(
