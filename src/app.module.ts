@@ -11,9 +11,12 @@ import { TypeOrmConfigCommand } from './commands/typeOrm-config.command';
 import { SequelizeConfigCommand } from './commands/sequelize-config.command';
 import { AuthConfigCommand } from './commands/auth-config.command';
 import { AppController } from './app.controller';
+import { FileManager } from './authStrategyMethods/utils/fileManager';
+import { AppService } from './app.service';
+import { AuthFileManager } from './authStrategyMethods/authFileManager';
 
 @Module({
-providers:[AuthConfigCommand,SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService,FileManager,AppService],
+providers:[AuthConfigCommand,SequelizeConfigCommand,PrismaConfigCommand,TypeOrmConfigCommand, PackageManagerService, FileManagerService,FileManager,AppService,AuthFileManager],
 imports:[  CommandRunnerModule,  ],
 controllers:[AppController],
 
