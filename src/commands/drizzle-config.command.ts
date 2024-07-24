@@ -5,20 +5,18 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from '../utils/fileManager.service';
 import { writeFile } from 'fs/promises';
-import { asyncExecuteCommand } from '../utils/asyncExecuteCommand'
+import { asyncExecuteCommand } from '../utils/asyncExecuteCommand';
+import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 
 @Command({ name: 'install-drizzle', description: 'Install Drizzle' })
 export class DrizzleConfigCommand extends CommandRunner {
-  
   constructor(
     private readonly packageManagerService: PackageManagerService,
-    private readonly fileManagerService: FileManagerService,
-    // private readonly commandExecutionService: CommandExecutionService,
+    private readonly fileManagerService: FileManagerService, // private readonly commandExecutionService: CommandExecutionService,
   ) {
     super();
   }
-  private readonly drizzleModuleContent = 
-`import { Module, Global } from '@nestjs/common';
+  private readonly drizzleModuleContent = `import { Module, Global } from '@nestjs/common';
 import { DrizzleService } from './drizzle.service';
 
 @Global()
@@ -27,7 +25,7 @@ import { DrizzleService } from './drizzle.service';
   exports: [DrizzleService],
 })
 export class DrizzleModule {}
-`
+`;
   private drizzleServiceContent: string;
 
   async run(
@@ -35,19 +33,17 @@ export class DrizzleModule {}
     options?: Record<string, any>,
   ): Promise<void> {
     try {
+      const flag = Object.keys(options || {})[0] || 'postgresql';
+      await this.intializeUserModule(flag);
       await this.installDrizzleDependencies();
-      await asyncExecuteCommand("nest g module drizzle")
+      await asyncExecuteCommand('nest g module drizzle');
       await writeFile(
         join(process.cwd(), 'src\\drizzle', 'drizzle.module.ts'),
         this.drizzleModuleContent,
       );
-      if(Object.keys(options || {}).length === 0) {
-        await this.runWithPostgresql()
+      if (Object.keys(options || {}).length === 0) {
+        await this.runWithPostgresql();
       }
-      const flag = Object.keys(options || {})[0] || "postgresql"
-      await this.intializeUserModule(flag)
-
-      console.log("drizzle configured succefully")
     } catch (err) {
       console.error(err);
     }
@@ -58,12 +54,17 @@ export class DrizzleModule {}
     description: 'Configure Drizzle with PostgreSQL',
   })
   async runWithPostgresql() {
-    console.log('Configuring Drizzle with PostgreSQL...');
-    await this.installPostgresDependencies()
-    await this.createDrizzleConfig("-psql")
-    await this.createDrizzleServiceFile("-psql");
-
-    console.log('Drizzle with PostgreSQL configured successfully!');
+    try {
+      console.log('Configuring Drizzle with PostgreSQL...');
+      await checkAndPromptEnvVariables('dpostgres');
+      await this.installPostgresDependencies();
+      await this.createDrizzleConfig('-psql');
+      await this.createDrizzleServiceFile('-psql');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      console.log('Drizzle with PostgreSQL configured successfully');
+    }
   }
 
   @Option({
@@ -71,12 +72,17 @@ export class DrizzleModule {}
     description: 'Configure Drizzle with MySQL',
   })
   async runWithMySQL() {
-    console.log('Configuring Drizzle with MySQL...');
-    await this.installMysqlDependencies()
-    await this.createDrizzleConfig("-my")
-    await this.createDrizzleServiceFile("-my");
-
-    console.log('Drizzle with MySQL configured successfully');
+    try {
+      console.log('Configuring Drizzle with MySQL...');
+      await checkAndPromptEnvVariables('dmysql');
+      await this.installMysqlDependencies();
+      await this.createDrizzleConfig('-my');
+      await this.createDrizzleServiceFile('-my');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      console.log('Drizzle with MySQL configured successfully');
+    }
   }
 
   @Option({
@@ -84,11 +90,16 @@ export class DrizzleModule {}
     description: 'Configure Drizzle with Sqlite',
   })
   async runWithSqlite() {
-    console.log('Configuring Drizzle with Sqlite...');
-    await this.installSqliteDependencies()
-    await this.createDrizzleConfig("-sl")
-    await this.createDrizzleServiceFile("-sl");
-    console.log('Drizzle with Sqlite configured successfully!');
+    try {
+      console.log('Configuring Drizzle with Sqlite...');
+      await this.installSqliteDependencies();
+      await this.createDrizzleConfig('-sl');
+      await this.createDrizzleServiceFile('-sl');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      console.log('Drizzle with Sqlite configured successfully');
+    }
   }
 
   private async installDrizzleDependencies(): Promise<void> {
@@ -99,7 +110,7 @@ export class DrizzleModule {}
     await this.packageManagerService.installDependency('drizzle-orm');
     await this.packageManagerService.installDependency('dotenv');
     spinner.stop(true);
-    console.log('Drizzle dependencies installed successfully!');
+    console.log('Drizzle dependencies installed successfully');
   }
 
   private async installPostgresDependencies(): Promise<void> {
@@ -109,16 +120,16 @@ export class DrizzleModule {}
     await this.packageManagerService.installDependency('@types/pg', true);
     await this.packageManagerService.installDependency('pg');
     spinner.stop(true);
-    console.log('PostgreSQL dependencies installed successfully!');
+    console.log('PostgreSQL dependencies installed successfully');
   }
 
   private async installMysqlDependencies(): Promise<void> {
-    const spinner = new Spinner('Installing Mysql dependencies... %s');
+    const spinner = new Spinner('Installing MySQL dependencies... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('mysql2');
     spinner.stop(true);
-    console.log('Mysql dependencies installed successfully!');
+    console.log('MySQL dependencies installed successfully');
   }
 
   private async installSqliteDependencies(): Promise<void> {
@@ -127,25 +138,27 @@ export class DrizzleModule {}
     spinner.start();
     await this.packageManagerService.installDependency('better-sqlite3');
     spinner.stop(true);
-    console.log('PostgreSQL dependencies installed successfully!');
+    console.log('PostgreSQL dependencies installed successfully');
   }
 
   private async createDrizzleConfig(flag?: string) {
-
-    const dialect = flag === '-my' || flag === '--mysql' ? 'mysql'
-      : flag === '-sl' || flag === '--sqlite' ? 'sqlite'
-      : flag === '-psql' || flag === '--postgresql' ? 'postgresql'
-      : 'postgresql'
-    const fileContent = 
-`import { defineConfig } from 'drizzle-kit';
+    const dialect =
+      flag === '-my' || flag === '--mysql'
+        ? 'mysql'
+        : flag === '-sl' || flag === '--sqlite'
+        ? 'sqlite'
+        : flag === '-psql' || flag === '--postgresql'
+        ? 'postgresql'
+        : 'postgresql';
+    const fileContent = `import { defineConfig } from 'drizzle-kit';
 import { config } from 'dotenv';
 config();
 
 const {
-  DB_HOST = 'defaultHost',
-  DB_USER = 'defaultUser',
-  DB_PASSWORD = 'defaultPassword',
-  DB_NAME = 'defaultDatabase',
+  DB_HOST = MYSQL_HOST |  POSTGRES_HOST  | 'localhost',
+  DB_USER = MYSQL_USER |  POSTGRES_USER  | 'defaultUser',
+  DB_PASSWORD = MYSQL_PASSWORD |  POSTGRES_PASSWORD  | 'defaultPassword',
+  DB_NAME = MYSQL_DB |  POSTGRES_DB  |'defaultDatabase',
 } = process.env;
 
 export default defineConfig({
@@ -166,26 +179,23 @@ export default defineConfig({
     database: DB_NAME,
   },
 });
-`
+`;
     try {
-      await writeFile(
-        join(process.cwd(), 'drizzle.config.ts'),
-        fileContent,
-      );
-      console.log("drizzle.config.ts created !")
-      
+      await writeFile(join(process.cwd(), 'drizzle.config.ts'), fileContent);
+      console.log(`Created drizzle.config.ts in src/user`);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     }
   }
 
   private async createDrizzleServiceFile(flag: string): Promise<void> {
-    const drizzleServicePath = join(process.cwd(), 'src', 'drizzle'); 
-    await this.fileManagerService.createDirectoryIfNotExists(drizzleServicePath);
-    
+    const drizzleServicePath = join(process.cwd(), 'src', 'drizzle');
+    await this.fileManagerService.createDirectoryIfNotExists(
+      drizzleServicePath,
+    );
+
     if (flag === '-sl' || flag === '--sqlite') {
-      this.drizzleServiceContent = 
-`import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+      this.drizzleServiceContent = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 
@@ -205,8 +215,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 }
   `;
     } else if (flag === '-psql' || flag === '--postgresql') {
-      this.drizzleServiceContent = 
-`import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+      this.drizzleServiceContent = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { config } from 'dotenv';
@@ -219,14 +228,14 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
   db: any;
 
   async onModuleInit() {
-    const { DATABASE_URL } = process.env;
+    const { DB_URL } = process.env;
 
-    if (!DATABASE_URL) {
-      throw new Error('DATABASE_URL is not defined in the environment variables');
+    if (!DB_URL) {
+      throw new Error('DB_URL is not defined in the environment variables');
     }
 
     this.pool = new Pool({
-      connectionString: DATABASE_URL,
+      connectionString: DB_URL,
     });
     this.db = drizzle(this.pool);
     await this.pool.connect();
@@ -239,8 +248,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
 `;
     } else if (flag === '-my' || flag === '--mysql') {
-      this.drizzleServiceContent = 
-`import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+      this.drizzleServiceContent = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { createConnection, Connection } from 'mysql2/promise';
 import { config } from 'dotenv';
@@ -276,24 +284,20 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
 `;
     }
-  
+
     try {
       const filePath = join(drizzleServicePath, 'drizzle.service.ts');
-      await writeFile(
-        filePath,
-        this.drizzleServiceContent
-      );
+      await writeFile(filePath, this.drizzleServiceContent);
     } catch (err) {
       console.error(`Failed to create drizzle.service.ts: `, err);
     }
   }
 
   private async intializeUserModule(flag: string): Promise<void> {
-    let userSchemaContent = ''
+    let userSchemaContent = '';
 
     if (flag === 'postgresql' || flag === 'psql') {
-      userSchemaContent = 
-`import { pgTable, serial, text } from 'drizzle-orm/pg-core';
+      userSchemaContent = `import { pgTable, serial, text } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: serial('id').primaryKey(),
@@ -301,10 +305,9 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
 });
-`
+`;
     } else if (flag === '-my' || flag === '--mysql') {
-      userSchemaContent = 
-`import { mysqlTable, int, text } from 'drizzle-orm/mysql-core';
+      userSchemaContent = `import { mysqlTable, int, text } from 'drizzle-orm/mysql-core';
 
 export const user = mysqlTable('user', {
   id: int('id').primaryKey().autoincrement(),
@@ -312,10 +315,9 @@ export const user = mysqlTable('user', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
 });
-`
+`;
     } else if (flag === '-sl' || flag === '--sqlite') {
-      userSchemaContent = 
-`import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+      userSchemaContent = `import { sqliteTable, integer, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const user = sqliteTable('user', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -325,7 +327,7 @@ export const user = sqliteTable('user', {
 }, (user) => ({
   emailUniqueIndex: uniqueIndex('email_unique_idx').on(user.email),
 }));
-`
+`;
     }
 
     const spinner = new Spinner('Initializing user module... %s');
@@ -339,7 +341,6 @@ export const user = sqliteTable('user', {
       userSchemaContent,
     );
     spinner.stop(true);
-    console.log('user module initialized successfully!');
+    console.log('Initialized user module in src/user');
   }
-
 }

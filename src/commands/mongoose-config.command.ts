@@ -6,6 +6,7 @@ import { PackageManagerService } from '../utils/packageManager.service';
 import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { CommandExecutionService } from 'src/utils/commandExecutionService.service';
+import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 
 @Command({ name: 'install-mongoose', description: 'Install Mongoose' })
 export class MongooseConfigCommand extends CommandRunner {
@@ -16,8 +17,7 @@ export class MongooseConfigCommand extends CommandRunner {
   ) {
     super();
   }
-  private readonly mongooseServiceContenu = 
-`import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+  private readonly mongooseServiceContenu = `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 
@@ -26,7 +26,7 @@ export class MongooseService implements OnModuleInit, OnModuleDestroy {
   constructor(@InjectConnection() private readonly connection: Connection) {}
 
   async onModuleInit() {
-    await this.connection.openUri(process.env.MONGO_URI);
+    await this.connection.openUri(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
   }
 
@@ -36,8 +36,7 @@ export class MongooseService implements OnModuleInit, OnModuleDestroy {
   }
 }
 `;
-  private userSchemaContent = 
-`import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+  private userSchemaContent = `import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
@@ -58,22 +57,29 @@ export const UserSchema = SchemaFactory.createForClass(User);
 `;
   async run(): Promise<void> {
     try {
-        await this.installMongooseDependencies();
-        await writeFile(
-            join(process.cwd(), 'src', 'Mongoose.service.ts'),
-            this.mongooseServiceContenu,
-        );
-        const importMongooseModule = `import { MongooseModule } from '@nestjs/mongoose';`;
-        const mongooseImport =`MongooseModule.forRoot(process.env.MONGO_URI)`
-        const importMongooseService = `import { MongooseService } from './mongoose.service';`;
-        const mongooseProvider ="MongooseService"
+      console.log('Configuring Mongoose...');
+      await checkAndPromptEnvVariables('mongodb');
+      await this.installMongooseDependencies();
+      await writeFile(
+        join(process.cwd(), 'src', 'Mongoose.service.ts'),
+        this.mongooseServiceContenu,
+      );
+      const importMongooseModule = `import { MongooseModule } from '@nestjs/mongoose';`;
+      const mongooseImport = `MongooseModule.forRoot(process.env.MONGODB_URI)`;
+      const importMongooseService = `import { MongooseService } from './mongoose.service';`;
+      const mongooseProvider = 'MongooseService';
 
-        await this.fileManagerService.addProviderToAppModule(importMongooseService,mongooseProvider);
-        await this.fileManagerService.addImportsToAppModule(importMongooseModule,mongooseImport);
-        console.log("mongoose configured succefully")
-        
-        await this.intializeUserModule()
-        
+      await this.fileManagerService.addProviderToAppModule(
+        importMongooseService,
+        mongooseProvider,
+      );
+      await this.fileManagerService.addImportsToAppModule(
+        importMongooseModule,
+        mongooseImport,
+      );
+      console.log('Mongoose configured successfully');
+
+      await this.intializeUserModule();
     } catch (err) {
       console.error(err);
     }
@@ -86,21 +92,27 @@ export const UserSchema = SchemaFactory.createForClass(User);
     await this.packageManagerService.installDependency('mongoose', true);
     await this.packageManagerService.installDependency('@nestjs/mongoose');
     spinner.stop(true);
-    console.log('Mongoose installed successfully!');
+    console.log('Mongoose installed successfully');
   }
 
   private async intializeUserModule(): Promise<void> {
     const spinner = new Spinner('Initializing user module... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
-    await this.commandExecutionService.asyncExecuteCommand('nest g module user');
-    await this.commandExecutionService.asyncExecuteCommand('nest g controller user');
-    await this.commandExecutionService.asyncExecuteCommand('nest g service user');
+    await this.commandExecutionService.asyncExecuteCommand(
+      'nest g module user',
+    );
+    await this.commandExecutionService.asyncExecuteCommand(
+      'nest g controller user',
+    );
+    await this.commandExecutionService.asyncExecuteCommand(
+      'nest g service user',
+    );
     await writeFile(
       join(process.cwd(), 'src/user', 'user.schema.ts'),
       this.userSchemaContent,
     );
     spinner.stop(true);
-    console.log('user module initialized successfully!');
+    console.log('Initialized user module in src/user');
   }
 }
