@@ -122,12 +122,13 @@ export class DrizzleModule {}
   }
 
   private async installSqliteDependencies(): Promise<void> {
-    const spinner = new Spinner('Installing PostgreSQL dependencies... %s');
+    const spinner = new Spinner('Installing Sqlite dependencies... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('better-sqlite3');
+    await this.packageManagerService.installDependency('@types/better-sqlite3', true);
     spinner.stop(true);
-    console.log('PostgreSQL dependencies installed successfully!');
+    console.log('Sqlite dependencies installed successfully!');
   }
 
   private async createDrizzleConfig(flag?: string) {
@@ -187,23 +188,23 @@ export default defineConfig({
       this.drizzleServiceContent = 
 `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
+import * as BetterSqlite3 from 'better-sqlite3'; // Correct import
 
 @Injectable()
 export class DrizzleService implements OnModuleInit, OnModuleDestroy {
-    private sqlite: Database;
-    db: any;
+  private sqlite: BetterSqlite3.Database; // Use the correct type
+  db: any;
 
-    async onModuleInit() {
-        this.sqlite = new Database('sqlite.db');
-        this.db = drizzle(this.sqlite);
-    }
+  async onModuleInit() {
+    this.sqlite = new BetterSqlite3('sqlite.db'); // Create a new instance correctly
+    this.db = drizzle(this.sqlite);
+  }
 
-    async onModuleDestroy() {
-        this.sqlite.close();
-    }
+  async onModuleDestroy() {
+    this.sqlite.close();
+  }
 }
-  `;
+ `;
     } else if (flag === '-psql' || flag === '--postgresql') {
       this.drizzleServiceContent = 
 `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
