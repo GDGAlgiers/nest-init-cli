@@ -20,16 +20,27 @@ const requiredPostgresEnvVariables = [
   'POSTGRES_PASSWORD',
   'POSTGRES_DB',
 ];
-const requiredMongoEnvVariables = ['MONGODB_URI', 'MONGODB_DB'];
+const requiredMongoEnvVariables = ['MONGODB_URI'];
+const requiredDrizzlePostgreVariables = ['DB_URL'];
+const requiredDrizzleMysqlVariables = [
+  'DB_HOST',
+  'DB_USER',
+  'DB_PASSWORD',
+  'DB_NAME',
+];
 
 export async function checkAndPromptEnvVariables(
-  dbType: 'mysql' | 'postgres' | 'mongodb',
+  dbType: 'mysql' | 'postgres' | 'mongodb' | 'dmysql' | 'dpostgres',
 ) {
   const requiredEnvVariables =
     dbType === 'mysql'
       ? requiredMysqlEnvVariables
       : dbType === 'postgres'
       ? requiredPostgresEnvVariables
+      : dbType === 'dmysql'
+      ? requiredDrizzleMysqlVariables
+      : dbType === 'dpostgres'
+      ? requiredDrizzlePostgreVariables
       : requiredMongoEnvVariables;
 
   const missingEnvVariables = requiredEnvVariables.filter(

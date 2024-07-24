@@ -6,8 +6,8 @@ import { join } from 'path';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
-import readline from 'readline';
-import * as fs from 'fs';
+import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+
 @Command({ name: 'install-prisma', description: 'Install prisma' })
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
@@ -53,14 +53,16 @@ export class PrismaConfigCommand extends CommandRunner {
           this.prismaServiceContenu,
         );
         const importPrisma = `import { PrismaService } from './prisma.service'; `;
-        const prismaProvider ="PrismaService"
+        const prismaProvider = 'PrismaService';
 
-       await this.fileManagerService.addProviderToAppModule(importPrisma,prismaProvider);
-        console.log("prisma configured succefully")
-       
+        await this.fileManagerService.addProviderToAppModule(
+          importPrisma,
+          prismaProvider,
+        );
+        console.log('Prisma configured successfully');
       } else {
         console.log(
-          'Please provide a valid flag -m for mongodb and -psql for postgresql',
+          'Please provide a valid flag: -m for mongodb and -psql for postgresql',
         );
       }
     } catch (err) {
@@ -70,16 +72,18 @@ export class PrismaConfigCommand extends CommandRunner {
 
   @Option({
     flags: '-m, --mongodb',
-    description: 'config prisma with mongo-db',
+    description: 'Configure Prisma with MongoDB',
   })
-  runWithMongo() {
+  async runWithMongo() {
+    console.log('Configuring Prisma with MongoDB...');
+    await checkAndPromptEnvVariables('mongodb');
     this.schemaContent = `generator client {
                 provider = "prisma-client-js"
             }
             
             datasource db {
                 provider = "mongodb"
-                url      = env("DATABASE_URL")
+                url      = env("MONGODB_URI")
             }
             
             model User {
@@ -88,14 +92,20 @@ export class PrismaConfigCommand extends CommandRunner {
                 email       String      @unique
                 password    String              
             }`;
-    console.log('Configuring Prisma with MongoDB...');
   }
 
   @Option({
     flags: '-psql, --postgresql',
-    description: 'prisma with postgresql',
+    description: 'Configure Prisma with PostgreSQL',
   })
-  runWithSql() {
+  async runWithSql() {
+    const postgresHost = process.env.POSTGRES_HOST;
+    const postgresPort = process.env.POSTGRES_PORT;
+    const postgresName = process.env.POSTGRES_DB;
+    console.log('Configuring Prisma with PostgreSQL...');
+    await checkAndPromptEnvVariables('postgres');
+
+    const connectionString = `mysql://${postgresHost}:${postgresPort}/${postgresName}`;
     this.schemaContent = `
         generator client {
             provider = "prisma-client-js"
@@ -103,7 +113,7 @@ export class PrismaConfigCommand extends CommandRunner {
 
         datasource db {
             provider = "postgresql"
-            url      = env("DATABASE_URL")
+            url      = ${connectionString}
         }
 
         model User {
@@ -112,7 +122,6 @@ export class PrismaConfigCommand extends CommandRunner {
             email       String      @unique
             password    String
         }`;
-    console.log('Configuring Prisma with Postgresql...');
   }
 
   private async initPrisma(): Promise<void> {
@@ -123,15 +132,15 @@ export class PrismaConfigCommand extends CommandRunner {
       );
     });
     exec('npx prisma generate');
-    console.log('Prisma init successfully!');
+    console.log('Initialized Prisma schema successfully');
   }
   private installPrismaDependencies(): void {
-    const spinner = new Spinner('Installing type orm ... %s');
+    const spinner = new Spinner('Installing TypeORM ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('prisma', true);
     this.packageManagerService.installDependency('@prisma/client');
     spinner.stop(true);
-    console.log('Prisma installed successfully!');
+    console.log('Prisma installed successfully');
   }
 }
