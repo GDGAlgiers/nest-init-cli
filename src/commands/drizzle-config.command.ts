@@ -97,6 +97,7 @@ export class DrizzleModule {}
     spinner.start();
     await this.packageManagerService.installDependency('drizzle-kit', true);
     await this.packageManagerService.installDependency('drizzle-orm');
+    await this.packageManagerService.installDependency('dotenv');
     spinner.stop(true);
     console.log('Drizzle dependencies installed successfully!');
   }
@@ -208,6 +209,9 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { config } from 'dotenv';
+
+config(); // Load environment variables from .env file
 
 @Injectable()
 export class DrizzleService implements OnModuleInit, OnModuleDestroy {
@@ -215,8 +219,14 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
   db: any;
 
   async onModuleInit() {
+    const { DATABASE_URL } = process.env;
+
+    if (!DATABASE_URL) {
+      throw new Error('DATABASE_URL is not defined in the environment variables');
+    }
+
     this.pool = new Pool({
-      connectionString: "postgresql://test:test@localhost:5432/test",
+      connectionString: DATABASE_URL,
     });
     this.db = drizzle(this.pool);
     await this.pool.connect();
@@ -226,12 +236,16 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
     await this.pool.end();
   }
 }
+
 `;
     } else if (flag === '-my' || flag === '--mysql') {
       this.drizzleServiceContent = 
 `import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/mysql2';
 import { createConnection, Connection } from 'mysql2/promise';
+import { config } from 'dotenv';
+
+config(); // Load environment variables from .env file
 
 @Injectable()
 export class DrizzleService implements OnModuleInit, OnModuleDestroy {
@@ -240,11 +254,11 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     const {
-      DB_HOST = '127.0.0.1',
-      DB_USER = 'test',
-      DB_PASSWORD = 'test',
-      DB_NAME = 'test',
-    } = {};
+      DB_HOST = '',
+      DB_USER = '',
+      DB_PASSWORD = '',
+      DB_NAME = '',
+    } = process.env;
 
     this.connection = await createConnection({
         host: DB_HOST,
@@ -259,6 +273,7 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
     await this.connection.end();
   }
 }
+
 `;
     }
   
