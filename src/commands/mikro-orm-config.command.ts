@@ -6,7 +6,9 @@ import { writeFile } from 'fs/promises';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @Command({
   name: 'install-mikroorm',
   description: 'Install MikroORM',

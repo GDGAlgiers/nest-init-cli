@@ -7,7 +7,9 @@ import { FileManagerService } from '../utils/fileManager.service';
 import { writeFile } from 'fs/promises';
 import { asyncExecuteCommand } from '../utils/asyncExecuteCommand';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @Command({ name: 'install-drizzle', description: 'Install Drizzle' })
 export class DrizzleConfigCommand extends CommandRunner {
   constructor(
@@ -98,7 +100,7 @@ export class DrizzleModule {}
     } catch (error) {
       console.error(error);
     } finally {
-      console.log('Drizzle with Sqlite configured successfully');
+      console.log('Drizzle with SQLite configured successfully');
     }
   }
 

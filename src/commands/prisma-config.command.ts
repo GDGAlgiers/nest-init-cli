@@ -7,7 +7,9 @@ import { PackageManagerService } from '../utils/packageManager.service';
 import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @Command({ name: 'install-prisma', description: 'Install prisma' })
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
