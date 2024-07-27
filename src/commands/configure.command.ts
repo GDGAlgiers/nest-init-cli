@@ -44,29 +44,59 @@ export class ConfigureCommand extends CommandRunner {
 
     if (configType === 'Authentication') {
       await this.runAuthConfig();
-      const { strategy } = await inquirer.prompt({
-        type: 'list',
-        name: 'strategy',
-        message: 'Choose strategy:',
-        choices: ['JWT (JSON Web Token)', 'Session', 'Cookies'],
-      });
-      switch (strategy) {
-        case 'JWT (JSON Web Token)':
-          break;
-        case 'Session':
-          break;
-        case 'Cookies':
-          break;
-        default:
-          break;
-      }
     } else {
       await this.runDbConfig();
     }
   }
 
   private async runAuthConfig(): Promise<void> {
-    await this.authConfigCmd.run();
+    await this.authConfigCmd.runLocalAuth();
+    const { strategy } = await inquirer.prompt({
+      type: 'list',
+      name: 'strategy',
+      message: 'Choose strategy:',
+      choices: ['JWT (JSON Web Token)', 'Session', 'Cookies'],
+    });
+    switch (strategy) {
+      case 'JWT (JSON Web Token)':
+        await this.authConfigCmd.addJwtAuth();
+        break;
+      case 'Session':
+        await this.authConfigCmd.addSessionAuth();
+        break;
+      case 'Cookies':
+        await this.authConfigCmd.addCookiesAuth();
+        break;
+      default:
+        break;
+    }
+    const { addGoogleAuth } = await inquirer.prompt({
+      type: 'confirm',
+      name: 'addGoogleAuth',
+      message:
+        'Would you like to integrate authentication using Google in your project?',
+    });
+    if (addGoogleAuth) {
+      await this.authConfigCmd.runGoogleAuth();
+    }
+    const { addFbAuth } = await inquirer.prompt({
+      type: 'confirm',
+      name: 'addFbAuth',
+      message:
+        'Would you like to integrate authentication using Facebook in your project?',
+    });
+    if (addFbAuth) {
+      await this.authConfigCmd.runFacebookAuth();
+    }
+    const { addGithubAuth } = await inquirer.prompt({
+      type: 'confirm',
+      name: 'addGithubAuth',
+      message:
+        'Would you like to integrate authentication using Github in your project?',
+    });
+    if (addGithubAuth) {
+      await this.authConfigCmd.runGithubAuth();
+    }
   }
 
   private async runDbConfig(): Promise<void> {
@@ -85,7 +115,6 @@ export class ConfigureCommand extends CommandRunner {
           message: 'Choose ORM:',
           choices: [
             { name: colors.yellow('Drizzle'), value: 'Drizzle' },
-
             { name: colors.green('MikroORM'), value: 'MikroORM' },
             { name: colors.blue('Sequelize'), value: 'Sequelize' },
             { name: colors.red('TypeORM'), value: 'TypeORM' },
@@ -105,7 +134,6 @@ export class ConfigureCommand extends CommandRunner {
             break;
           case 'TypeORM':
             await this.typeOrmConfigCmd.runWithMySQL();
-
             break;
           default:
             break;

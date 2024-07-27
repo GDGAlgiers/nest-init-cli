@@ -19,5 +19,10 @@
     "noFallthroughCasesInSwitch": false,
     "rootDirs": ["src"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval",
+    "excludeFiles": ["package.json"],
+    "excludeDirectories": ["**/node_modules", "_build", "temp/*"]
+  }
 }
