@@ -50,6 +50,7 @@ export class PackageManagerService {
     this.dependencyQueue.push({ dependency, dev });
 
     if (!this.isInstalling) {
+      console.log(`Installing ${dependency}...`);
       this.isInstalling = true;
       await this.processQueue();
     }
@@ -70,7 +71,7 @@ export class PackageManagerService {
           dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
         }`;
         await asyncExecuteCommand(command);
-        console.log(`${dependency} installed successfully.`);
+        console.log(`${dependency} installed successfully`);
       }
     } catch (error) {
       console.error(`Failed to install dependencies:`, error);

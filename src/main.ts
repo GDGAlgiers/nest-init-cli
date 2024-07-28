@@ -11,7 +11,9 @@ async function bootstrap() {
     const configureCommand = appContext.get(ConfigureCommand);
     await configureCommand.run();
     console.log('Configuration complete.');
-    await configureCommand.run();
+    while (true) {
+      await configureCommand.run();
+    }
   } catch (error) {
     console.error('An error occurred during configuration:', error);
   }

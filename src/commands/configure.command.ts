@@ -88,6 +88,7 @@ export class ConfigureCommand extends CommandRunner {
             { name: colors.green('MikroORM'), value: 'MikroORM' },
             { name: colors.blue('Sequelize'), value: 'Sequelize' },
             { name: colors.red('TypeORM'), value: 'TypeORM' },
+            { name: colors.yellow('Prisma'), value: 'Prisma' },
           ],
         }));
         switch (ormType) {
@@ -104,6 +105,9 @@ export class ConfigureCommand extends CommandRunner {
             break;
           case 'TypeORM':
             await this.typeOrmConfigCmd.runWithMySQL();
+            break;
+          case 'Prisma':
+            await this.prismaConfigCmd.runWithMySQL();
             break;
           default:
             console.log('Setting up MySQL with TypeORM by default...');
@@ -142,11 +146,11 @@ export class ConfigureCommand extends CommandRunner {
             break;
 
           case 'Prisma':
-            await this.prismaConfigCmd.runWithSql();
+            await this.prismaConfigCmd.runWithPostgres();
             break;
           default:
             console.log('Setting up PostgreSQL with Prisma by default...');
-            await this.prismaConfigCmd.runWithSql();
+            await this.prismaConfigCmd.runWithPostgres();
             break;
         }
         break;
@@ -166,8 +170,9 @@ export class ConfigureCommand extends CommandRunner {
           name: 'ormType',
           message: 'Choose ORM:',
           choices: [
-            { name: colors.green('MikroORM'), value: 'MikroORM' },
+            { name: colors.green('Mongoose'), value: 'Mongoose' },
             { name: colors.red('TypeORM'), value: 'TypeORM' },
+            { name: colors.blue('MikroORM'), value: 'MikroORM' },
             { name: colors.yellow('Prisma'), value: 'Prisma' },
           ],
         }));
@@ -177,6 +182,9 @@ export class ConfigureCommand extends CommandRunner {
             break;
           case 'MikroORM':
             await this.mikroOrmConfigCmd.runWithMongo();
+            break;
+          case 'TypeORM':
+            await this.typeOrmConfigCmd.runWithMongo();
             break;
           case 'Prisma':
             await this.prismaConfigCmd.runWithMongo();
@@ -189,7 +197,7 @@ export class ConfigureCommand extends CommandRunner {
         break;
       default:
         console.log('Setting up PostgreSQL with Prisma by default...');
-        await this.prismaConfigCmd.runWithSql();
+        await this.prismaConfigCmd.runWithPostgres();
         break;
     }
   }

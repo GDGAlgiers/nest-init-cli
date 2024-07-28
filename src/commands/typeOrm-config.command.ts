@@ -122,7 +122,7 @@ export class TypeOrmMySqlModule {}
     await this.packageManagerService.installDependency('@nestjs/config');
     await this.packageManagerService.installDependency('mongoose');
     await this.createDatasourceModule('-m');
-    console.log('TypeORM with MongoDB configured successfully!');
+    console.log('TypeORM with MongoDB configured successfully');
   }
 
   @Option({
@@ -136,7 +136,7 @@ export class TypeOrmMySqlModule {}
     await this.packageManagerService.installDependency('pg');
     await this.createDatasourceModule('-psql');
 
-    console.log('TypeORM with PostgreSQL configured successfully!');
+    console.log('TypeORM with PostgreSQL configured successfully');
   }
 
   @Option({
@@ -150,17 +150,17 @@ export class TypeOrmMySqlModule {}
     await this.packageManagerService.installDependency('mysql2');
     await this.createDatasourceModule('-my');
 
-    console.log('TypeORM with MySQL configured successfully!');
+    console.log('TypeORM with MySQL configured successfully');
   }
 
   private async installTypeOrmDependencies(): Promise<void> {
-    const spinner = new Spinner('Installing TypeORM... %s');
+    const spinner = new Spinner('Installing TypeORM dependencies... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('typeorm', true);
     await this.packageManagerService.installDependency('@nestjs/typeorm');
     spinner.stop(true);
-    console.log('TypeORM installed successfully!');
+    console.log('TypeORM installed successfully');
   }
 
   private async createDatasourceModule(flag: string): Promise<void> {

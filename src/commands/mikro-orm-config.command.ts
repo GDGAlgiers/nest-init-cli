@@ -111,6 +111,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('postgres');
     await this.installPostgresDependencies();
     await this.writeToFile('-psql');
+    console.log('Configured MikroORM with PostgreSQL successfully');
   }
 
   @Option({
@@ -123,6 +124,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('mysql');
     await this.installMysqlDependencies();
     await this.writeToFile('-my');
+    console.log('Configured MikroORM with MySQL successfully');
   }
 
   @Option({
@@ -135,6 +137,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('mongodb');
     await this.installMongoDependencies();
     await this.writeToFile('-m');
+    console.log('Configured MikroORM with MongoDB successfully');
   }
 
   private async installPostgresDependencies(): Promise<void> {

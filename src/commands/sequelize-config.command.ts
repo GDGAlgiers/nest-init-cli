@@ -63,7 +63,7 @@ export class SequelizeConfigCommand extends CommandRunner {
     spinner.start();
     await this.packageManagerService.installDependency('pg');
     spinner.stop(true);
-    console.log('PostgreSQL dependencies installed successfully!');
+    console.log('PostgreSQL dependencies installed successfully');
   }
 
   private async installMysqlDependencies(): Promise<void> {
@@ -72,7 +72,7 @@ export class SequelizeConfigCommand extends CommandRunner {
     spinner.start();
     await this.packageManagerService.installDependency('mysql2');
     spinner.stop(true);
-    console.log('MySQL dependencies installed successfully!');
+    console.log('MySQL dependencies installed successfully');
   }
 
   private async installSequelizeDependencies(): Promise<void> {
@@ -87,7 +87,7 @@ export class SequelizeConfigCommand extends CommandRunner {
       );
       await this.packageManagerService.installDependency('@nestjs/sequelize');
       spinner.stop(true);
-      console.log('Sequelize dependencies installed successfully!');
+      console.log('Sequelize dependencies installed successfully');
     } catch (error) {
       console.error('Error installing Sequelize dependencies:', error);
       throw error;

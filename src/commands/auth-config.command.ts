@@ -298,6 +298,10 @@ export class AuthConfigCommand extends CommandRunner {
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('express-session');
+    await this.packageManagerService.installDependency(
+      '@types/express-session',
+      true,
+    );
     await this.initFolder('protected');
     await this.authFileManager.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
@@ -343,8 +347,8 @@ export class AuthConfigCommand extends CommandRunner {
   // function to install passport.js dependencies
   private async installDependencies(): Promise<void> {
     const spinner = new Spinner('Installing Passport.js dependencies  ... %s');
-    spinner.setSpinnerString('|/-\\');
     try {
+      spinner.setSpinnerString('|/-\\');
       spinner.start();
       await this.packageManagerService.installDependency('bcryptjs');
       await this.packageManagerService.installDependency('passport-local');

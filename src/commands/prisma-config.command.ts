@@ -10,7 +10,10 @@ import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-@Command({ name: 'install-prisma', description: 'Install prisma' })
+@Command({
+  name: 'install-prisma',
+  description: 'Install Prisma ',
+})
 export class PrismaConfigCommand extends CommandRunner {
   constructor(
     private readonly packageManagerService: PackageManagerService,
@@ -18,96 +21,67 @@ export class PrismaConfigCommand extends CommandRunner {
   ) {
     super();
   }
-  private readonly prismaServiceContenu = `
+
+  private readonly prismaServiceContent = `
     import { INestApplication, Injectable, OnModuleInit } from '@nestjs/common';
     import { PrismaClient } from '@prisma/client';
 
-    
     @Injectable()
     export class PrismaService extends PrismaClient implements OnModuleInit {
       async onModuleInit() {
         await this.$connect();
       }
-    
+
       async onModuleDestroy() {
         await this.$disconnect();
       }
     }
-    
-    `;
-  private schemaContent: string;
+  `;
 
-  async run(
-    passedParams: string[],
-    options?: Record<string, any>,
-  ): Promise<void> {
-    try {
-      // moved inside partial run funcs for menu purposes
-      // if (
-      //   !options?.flag ||
-      //   options?.flag === '-m' ||
-      //   options?.flag === '--mongodb' ||
-      //   options?.flag === '-psql' ||
-      //   options?.flag === '--postgresql'
-      // ) {
-      //   this.installPrismaDependencies();
-      //   this.initPrisma();
-      //   await writeFile(
-      //     join(process.cwd(), 'src', 'prisma.service.ts'),
-      //     this.prismaServiceContenu,
-      //   );
-      //   const importPrisma = `import { PrismaService } from './prisma.service'; `;
-      //   const prismaProvider = 'PrismaService';
-      //   await this.fileManagerService.addProviderToAppModule(
-      //     importPrisma,
-      //     prismaProvider,
-      //   );
-      //   console.log('Prisma configured successfully');
-      // } else {
-      //   console.log(
-      //     'Please provide a valid flag: -m for mongodb and -psql for postgresql',
-      //   ); }
-    } catch (err) {
-      console.error(err);
-    }
+  private readonly prismaModuleContent = `
+    import { Module } from '@nestjs/common';
+    import { PrismaService } from './prisma.service';
+
+    @Module({
+      providers: [PrismaService],
+      exports: [PrismaService],
+    })
+    export class PrismaModule {}
+  `;
+
+  async run(): Promise<void> {
+    console.log(
+      'Please provide a valid flag: -m for MongoDB, -psql for PostgreSQL, -mysql for MySQL',
+    );
   }
 
   @Option({
     flags: '-m, --mongodb',
     description: 'Configure Prisma with MongoDB',
   })
-  async runWithMongo() {
+  async runWithMongo(): Promise<void> {
     console.log('Configuring Prisma with MongoDB...');
-    this.installPrismaDependencies();
-    this.initPrisma();
-    await writeFile(
-      join(process.cwd(), 'src', 'prisma.service.ts'),
-      this.prismaServiceContenu,
-    );
-    const importPrisma = `import { PrismaService } from './prisma.service'; `;
-    const prismaProvider = 'PrismaService';
-
-    await this.fileManagerService.addProviderToAppModule(
-      importPrisma,
-      prismaProvider,
-    );
-
-    await checkAndPromptEnvVariables('mongodb');
-    this.schemaContent = `generator client {
-                provider = "prisma-client-js"
-            }
+    await this.installPrismaDependencies();
+    await this.createPrismaFiles();
+    const schemaContentMongo: string = `generator client {
+      provider = "prisma-client-js"
+      }
             
             datasource db {
                 provider = "mongodb"
                 url      = env("MONGODB_URI")
-            }
-            
-            model User {
+                }
+                
+                model User {
                 id          String      @id @default(auto()) @map("_id") @db.ObjectId
                 username    String
                 email       String      @unique
                 password    String              
-            }`;
+                };`;
+
+    await this.initPrisma(schemaContentMongo);
+
+    await checkAndPromptEnvVariables('mongodb');
     console.log('Prisma with MongoDB configured successfully');
   }
 
@@ -115,62 +89,116 @@ export class PrismaConfigCommand extends CommandRunner {
     flags: '-psql, --postgresql',
     description: 'Configure Prisma with PostgreSQL',
   })
-  async runWithSql() {
+  async runWithPostgres(): Promise<void> {
+    console.log('Configuring Prisma with PostgreSQL...');
+
     const postgresHost = process.env.POSTGRES_HOST;
     const postgresPort = process.env.POSTGRES_PORT;
     const postgresName = process.env.POSTGRES_DB;
-    console.log('Configuring Prisma with PostgreSQL...');
+    const connectionString = `postgresql://${postgresHost}:${postgresPort}/${postgresName}`;
+    const schemaContentPostgre = `
+    generator client {
+      provider = "prisma-client-js"
+        }
+        
+        datasource db {
+            provider = "postgresql"
+            url      = "${connectionString}"
+            }
+            
+            model User {
+              id          String      @id 
+              username    String
+              email       String      @unique
+              password    String
+              }`;
     await checkAndPromptEnvVariables('postgres');
     await this.installPrismaDependencies();
-    await this.initPrisma();
-    await writeFile(
-      join(process.cwd(), 'src', 'prisma.service.ts'),
-      this.prismaServiceContenu,
-    );
-    const importPrisma = `import { PrismaService } from './prisma.service'; `;
-    const prismaProvider = 'PrismaService';
+    await this.createPrismaFiles();
+    await this.initPrisma(schemaContentPostgre);
+    console.log('Prisma with PostgreSQL configured successfully');
+  }
+
+  @Option({
+    flags: '-mysql, --mysql',
+    description: 'Configure Prisma with MySQL',
+  })
+  async runWithMySQL(): Promise<void> {
+    console.log('Configuring Prisma with MySQL...');
+
+    const mysqlHost = process.env.MYSQL_HOST;
+    const mysqlPort = process.env.MYSQL_PORT;
+    const mysqlName = process.env.MYSQL_DB;
+    const connectionString = `mysql://${mysqlHost}:${mysqlPort}/${mysqlName}`;
+    const schemaContentMySQL = `
+        generator client {
+            provider = "prisma-client-js"
+        }
+        
+        datasource db {
+            provider = "mysql"
+            url      = "${connectionString}"
+            }
+            
+            model User {
+            id          String      @id 
+            username    String
+            email       String      @unique
+            password    String
+            }`;
+
+    await checkAndPromptEnvVariables('mysql');
+    await this.installPrismaDependencies();
+    await this.createPrismaFiles();
+    await this.initPrisma(schemaContentMySQL);
+    console.log('Prisma with MySQL configured successfully');
+  }
+
+  private async initPrisma(content: string): Promise<void> {
+    exec('npx prisma init').on('exit', async () => {
+      await writeFile(join(process.cwd(), 'prisma', 'schema.prisma'), content);
+    });
+    exec('npx prisma generate');
+    console.log('Initialized Prisma schema successfully');
+  }
+
+  private async installPrismaDependencies(): Promise<void> {
+    const spinner = new Spinner('Installing Prisma dependencies ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
+    try {
+      await this.packageManagerService.installDependency('prisma', true);
+      await this.packageManagerService.installDependency('@prisma/client');
+      spinner.stop(true);
+      console.log('Prisma installed successfully');
+    } catch (error) {
+      spinner.stop(true);
+      console.error('Failed to install Prisma dependencies:', error);
+      throw error;
+    }
+  }
+
+  private async createPrismaFiles(): Promise<void> {
+    const prismaDir = join(process.cwd(), 'prisma');
+    await this.fileManagerService.createDirectoryIfNotExists(prismaDir);
+    let filename = 'prisma.service.ts';
+    let filePath = join(prismaDir, filename);
+    try {
+      await writeFile(filePath, this.prismaServiceContent);
+      console.log(`Created ${filename} in prisma`);
+      filename = 'prisma.module.ts';
+      filePath = join(prismaDir, filename);
+      await writeFile(filePath, this.prismaModuleContent);
+      console.log(`Created ${filename} in prisma`);
+    } catch (err) {
+      console.error(`Failed to create ${filename}:`, err);
+    }
+    const importPrisma = `import { PrismaModule } from '../prisma/prisma.module'; `;
+    const prismaProvider = 'PrismaModule';
 
     await this.fileManagerService.addProviderToAppModule(
       importPrisma,
       prismaProvider,
     );
-    const connectionString = `postgresql://${postgresHost}:${postgresPort}/${postgresName}`;
-    this.schemaContent = `
-        generator client {
-            provider = "prisma-client-js"
-        }
-
-        datasource db {
-            provider = "postgresql"
-            url      = ${connectionString}
-        }
-
-        model User {
-            id          String      @id 
-            username    String
-            email       String      @unique
-            password    String
-        }`;
-    console.log('Prisma with PostgreSQL configured successfully');
-  }
-
-  private async initPrisma(): Promise<void> {
-    exec('npx prisma init').on('exit', async () => {
-      await writeFile(
-        join(process.cwd(), 'prisma', 'schema.prisma'),
-        this.schemaContent,
-      );
-    });
-    exec('npx prisma generate');
-    console.log('Initialized Prisma schema successfully');
-  }
-  private installPrismaDependencies(): void {
-    const spinner = new Spinner('Installing Prisma dependencies ... %s');
-    spinner.setSpinnerString('|/-\\');
-    spinner.start();
-    this.packageManagerService.installDependency('prisma', true);
-    this.packageManagerService.installDependency('@prisma/client');
-    spinner.stop(true);
-    console.log('Prisma installed successfully');
   }
 }

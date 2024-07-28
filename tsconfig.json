@@ -31,10 +31,21 @@
     "src/database",
     "src/datasource"
   ],
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts"],
   "watchOptions": {
     "watchFile": "fixedPollingInterval",
-    "excludeFiles": ["package.json", "src/app.module.ts"],
+    "excludeFiles": [
+      "package.json",
+      "src/app.module.ts",
+      "src/main.ts",
+      "src/drizzle.config.ts",
+      "src/typeorm.mysql.module.ts",
+      "src/typeorm.postgresql.module.ts",
+      "src/typeorm.mongodb.module.ts",
+      "src/database/database.psql.module.ts",
+      "src/database/database.mysql.module.ts",
+      "src/Mongoose.service.ts"
+    ],
     "excludeDirectories": [
       "**/node_modules",
       "_build",
@@ -45,7 +56,8 @@
       "src/auth",
       "src/drizzle",
       "src/database",
-      "src/datasource"
+      "src/datasource",
+      "prisma"
     ]
   }
 }
