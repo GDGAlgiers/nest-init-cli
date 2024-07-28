@@ -119,7 +119,7 @@ export class ConfigureCommand extends CommandRunner {
         ({ ormType } = await inquirer.prompt({
           type: 'list',
           name: 'ormType',
-          message: 'Choose ORM:',
+          message: colors.cyan.italic('Choose ORM:'),
           choices: [
             { name: colors.yellow('Drizzle'), value: 'Drizzle' },
             { name: colors.green('MikroORM'), value: 'MikroORM' },
@@ -158,7 +158,7 @@ export class ConfigureCommand extends CommandRunner {
         ormType = await inquirer.prompt({
           type: 'list',
           name: 'ormType',
-          message: 'Choose ORM:',
+          message: colors.cyan.italic('Choose ORM:'),
           choices: [{ name: colors.yellow('Drizzle'), value: 'Drizzle' }],
         });
         await this.drizzleConfigCmd.runWithSQLite();
@@ -168,7 +168,7 @@ export class ConfigureCommand extends CommandRunner {
         ({ ormType } = await inquirer.prompt({
           type: 'list',
           name: 'ormType',
-          message: 'Choose ORM:',
+          message: colors.cyan.italic('Choose ORM:'),
           choices: [
             { name: colors.green('Mongoose'), value: 'Mongoose' },
             { name: colors.red('TypeORM'), value: 'TypeORM' },
