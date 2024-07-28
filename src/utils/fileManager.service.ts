@@ -76,9 +76,6 @@ export class FileManagerService {
 
     // Check if the providerPath is already in the file
     const fileContent = await readFile(filePath, 'utf8');
-    if (fileContent.includes(providerPath)) {
-      console.error(`Provider path '${providerPath}' is already added.`);
-    }
 
     try {
       const fileData: string = await this.readByLineAsyncAndUpdate(

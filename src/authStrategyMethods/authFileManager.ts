@@ -31,7 +31,6 @@ export class AuthFileManager {
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '@nestjs-modules/mailer';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -40,7 +39,6 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
     private readonly mailerService: MailerService,
   ) {}
 
@@ -54,7 +52,7 @@ export class AuthService {
       typeof user !== 'string' &&
       (await bcrypt.compare(pass, user.password))
     ) {
-      const { ...result } = user;
+      const { password, ...result } = user;
       return result;
     }
     return null;
@@ -75,12 +73,6 @@ export class AuthService {
     }
     return null;
   }
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
-  }
 
   async register(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -88,10 +80,8 @@ export class AuthService {
       ...createUserDto,
       password: hashedPassword,
     });
-    const payload = { email: user.email, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    const { password, ...result } = user;
+    return result;
   }
 
   async requestPasswordReset(email: string) {
@@ -100,10 +90,7 @@ export class AuthService {
       throw new Error('User not found');
     }
 
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
-
-    const resetLink = 'http://yourfrontend.com/reset-password?token=' + token;
+    const resetLink = 'http://yourfrontend.com/reset-password?email=' + email;
 
     await this.mailerService.sendMail({
       to: email,
@@ -122,17 +109,8 @@ export class AuthService {
     return { message: 'Password reset link sent' };
   }
 
-  async resetPassword(token: string, newPassword: string) {
-    let payload: any;
-    try {
-      payload = this.jwtService.verify(token);
-    } catch (e) {
-      throw new Error('Invalid or expired token');
-    }
-
-    const user = this.usersService
-      .findAll()
-      .find((u) => u.email === payload.email);
+  async resetPassword(email: string, newPassword: string) {
+    const user = this.usersService.findAll().find((u) => u.email === email);
     if (!user) {
       throw new Error('User not found');
     }
@@ -142,6 +120,7 @@ export class AuthService {
 
     return { message: 'Password reset successfully' };
   }
+
   async findUserById(userId: number) {
     return this.usersService.findOne(userId);
   }
@@ -173,14 +152,51 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     filename = `local.strategy.ts`;
     await this.createFile(filename, LocalStrategyContent, 'auth');
 
+    let mailerModuleContent = `import { Module } from '@nestjs/common';
+import { MailerModule as NestMailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+
+@Module({
+  imports: [
+    NestMailerModule.forRoot({
+      transport: {
+        host: 'smtp.example.com',
+        port: 587,
+        auth: {
+          user: 'user@example.com',
+          pass: 'password',
+        },
+      },
+      defaults: {
+        from: '"No Reply" <noreply@example.com>',
+      },
+      template: {
+        dir: join(__dirname, 'templates'),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
+      },
+    }),
+  ],
+  exports: [NestMailerModule],
+})
+export class MailerModule {}
+    `;
+    filename = `mailer.module.ts`;
+    await this.createFile(filename, mailerModuleContent, 'mailer');
+
     let authModuleContent = `import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './local.strategy';
+import { MailerModule } from 'src/mailer/mailer.module';
+
 
 @Module({
-  imports: [UsersModule, PassportModule],
+  imports: [UsersModule, PassportModule, MailerModule],
   providers: [AuthService, LocalStrategy],
   exports: [AuthService],
 

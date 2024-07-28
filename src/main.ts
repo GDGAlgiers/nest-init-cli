@@ -18,6 +18,7 @@ async function bootstrap() {
   } catch (error) {
     console.error('An error occurred during configuration:', error);
   } finally {
+    return;
     process.exit(0);
   }
 }

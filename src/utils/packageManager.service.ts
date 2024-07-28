@@ -70,7 +70,7 @@ export class PackageManagerService {
           dev ? (packageManager === 'npm' ? '--save-dev' : '--dev') : ''
         }`;
         await asyncExecuteCommand(command);
-        // console.log(`${dependency} installed successfully.`);
+        console.log(`${dependency} installed successfully.`);
       }
     } catch (error) {
       console.error(`Failed to install dependencies:`, error);

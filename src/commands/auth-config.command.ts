@@ -9,6 +9,7 @@ import { FileManager } from '../authStrategyMethods/utils/fileManager';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 import { generateUserResource } from 'src/authStrategyMethods/utils/generate-user-resource';
 import { Injectable } from '@nestjs/common';
+import * as colors from 'colors';
 
 @Injectable()
 @Command({ name: 'add-auth', description: 'Add authentication services' })
@@ -190,6 +191,65 @@ export class AuthConfigCommand extends CommandRunner {
         await generateUserResource();
       }
       console.log('Authentication services have been successfully added.');
+
+      const { strategy } = await prompt({
+        type: 'list',
+        name: 'strategy',
+        message: 'Choose an autentication strategy:',
+        choices: [
+          {
+            name: colors.yellow('JWT (JSON Web Token)'),
+            value: 'JWT (JSON Web Token)',
+          },
+          { name: colors.green('Session'), value: 'Session' },
+          { name: colors.blue('Cookies'), value: 'Cookies' },
+        ],
+      });
+      switch (strategy) {
+        case 'JWT (JSON Web Token)':
+          await this.addJwtAuth();
+          break;
+        case 'Session':
+          await this.addSessionAuth();
+          break;
+        case 'Cookies':
+          await this.addCookiesAuth();
+          break;
+        default:
+          console.log('Adding JWT strategy by default...');
+          await this.addJwtAuth();
+          break;
+      }
+
+      const { addGoogleAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGoogleAuth',
+        message:
+          'Would you like to integrate authentication using Google in your project?',
+      });
+      if (addGoogleAuth) {
+        await this.runGoogleAuth();
+      }
+
+      const { addFbAuth } = await prompt({
+        type: 'confirm',
+        name: 'addFbAuth',
+        message:
+          'Would you like to integrate authentication using Facebook in your project?',
+      });
+      if (addFbAuth) {
+        await this.runFacebookAuth();
+      }
+
+      const { addGithubAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGithubAuth',
+        message:
+          'Would you like to integrate authentication using Github in your project?',
+      });
+      if (addGithubAuth) {
+        await this.runGithubAuth();
+      }
     } catch (error) {
       console.error('An error has occurred while setting up authentication');
     }
@@ -197,6 +257,8 @@ export class AuthConfigCommand extends CommandRunner {
 
   // function to handle adding JWT strategy
   async addJwtAuth(): Promise<void> {
+    const spinner = new Spinner('Installing JWT dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
     await this.packageManagerService.installDependency('@nestjs/jwt');
     await this.packageManagerService.installDependency('passport-jwt');
     await this.packageManagerService.installDependency('jsonwebtoken');
@@ -224,11 +286,14 @@ export class AuthConfigCommand extends CommandRunner {
       },
     })`,
     );
-    console.log('you should fix user services to use jwt strategy');
+    spinner.stop(true);
   }
 
   // function to handle adding express session strategy
   async addSessionAuth(): Promise<void> {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
     await this.packageManagerService.installDependency('express-session');
     await this.initFolder('protected');
     await this.authFileManager.addSessionStrategy();
@@ -245,10 +310,14 @@ export class AuthConfigCommand extends CommandRunner {
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule.register({ session: true })`,
     );
+    spinner.stop(false);
   }
 
   // function to handle adding cookies strategy
   async addCookiesAuth(): Promise<void> {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
     await this.packageManagerService.installDependency('express-session');
     await this.initFolder('protected');
     await this.authFileManager.addCookiesStrategy();
@@ -265,6 +334,7 @@ export class AuthConfigCommand extends CommandRunner {
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule`,
     );
+    spinner.stop(true);
   }
 
   // function to install passport.js dependencies
@@ -274,7 +344,6 @@ export class AuthConfigCommand extends CommandRunner {
     try {
       spinner.start();
       await this.packageManagerService.installDependency('bcryptjs');
-      await this.packageManagerService.installDependency('@nestjs/jwt');
       await this.packageManagerService.installDependency('passport-local');
       await this.packageManagerService.installDependency(
         '@types/passport-local',
@@ -299,6 +368,7 @@ export class AuthConfigCommand extends CommandRunner {
     if (!authExists) {
       try {
         await this.fileManagerService.createDirectoryIfNotExists('src/auth');
+        await this.fileManagerService.createDirectoryIfNotExists('src/mailer');
       } catch (err) {
         console.error(
           'Error while initializing authentication service and module:',

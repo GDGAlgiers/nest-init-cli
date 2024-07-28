@@ -19,10 +19,25 @@
     "noFallthroughCasesInSwitch": false,
     "rootDirs": ["src"]
   },
+  "exclude": [
+    "node_modules",
+    "_build",
+    "temp",
+    "src/users",
+    "src/mailer",
+    "src/auth"
+  ],
   "include": ["src/**/*"],
   "watchOptions": {
     "watchFile": "fixedPollingInterval",
-    "excludeFiles": ["package.json"],
-    "excludeDirectories": ["**/node_modules", "_build", "temp/*"]
+    "excludeFiles": ["package.json", "src/app.module.ts"],
+    "excludeDirectories": [
+      "**/node_modules",
+      "_build",
+      "temp/*",
+      "src/users",
+      "src/mailer",
+      "src/auth"
+    ]
   }
 }
