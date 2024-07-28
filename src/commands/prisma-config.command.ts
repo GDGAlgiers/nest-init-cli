@@ -36,37 +36,37 @@ export class PrismaConfigCommand extends CommandRunner {
     
     `;
   private schemaContent: string;
+
   async run(
     passedParams: string[],
     options?: Record<string, any>,
   ): Promise<void> {
     try {
-      if (
-        !options?.flag ||
-        options?.flag === '-m' ||
-        options?.flag === '--mongodb' ||
-        options?.flag === '-psql' ||
-        options?.flag === '--postgresql'
-      ) {
-        this.installPrismaDependencies();
-        this.initPrisma();
-        await writeFile(
-          join(process.cwd(), 'src', 'prisma.service.ts'),
-          this.prismaServiceContenu,
-        );
-        const importPrisma = `import { PrismaService } from './prisma.service'; `;
-        const prismaProvider = 'PrismaService';
-
-        await this.fileManagerService.addProviderToAppModule(
-          importPrisma,
-          prismaProvider,
-        );
-        console.log('Prisma configured successfully');
-      } else {
-        console.log(
-          'Please provide a valid flag: -m for mongodb and -psql for postgresql',
-        );
-      }
+      // moved inside partial run funcs for menu purposes
+      // if (
+      //   !options?.flag ||
+      //   options?.flag === '-m' ||
+      //   options?.flag === '--mongodb' ||
+      //   options?.flag === '-psql' ||
+      //   options?.flag === '--postgresql'
+      // ) {
+      //   this.installPrismaDependencies();
+      //   this.initPrisma();
+      //   await writeFile(
+      //     join(process.cwd(), 'src', 'prisma.service.ts'),
+      //     this.prismaServiceContenu,
+      //   );
+      //   const importPrisma = `import { PrismaService } from './prisma.service'; `;
+      //   const prismaProvider = 'PrismaService';
+      //   await this.fileManagerService.addProviderToAppModule(
+      //     importPrisma,
+      //     prismaProvider,
+      //   );
+      //   console.log('Prisma configured successfully');
+      // } else {
+      //   console.log(
+      //     'Please provide a valid flag: -m for mongodb and -psql for postgresql',
+      //   ); }
     } catch (err) {
       console.error(err);
     }
@@ -78,6 +78,20 @@ export class PrismaConfigCommand extends CommandRunner {
   })
   async runWithMongo() {
     console.log('Configuring Prisma with MongoDB...');
+    this.installPrismaDependencies();
+    this.initPrisma();
+    await writeFile(
+      join(process.cwd(), 'src', 'prisma.service.ts'),
+      this.prismaServiceContenu,
+    );
+    const importPrisma = `import { PrismaService } from './prisma.service'; `;
+    const prismaProvider = 'PrismaService';
+
+    await this.fileManagerService.addProviderToAppModule(
+      importPrisma,
+      prismaProvider,
+    );
+
     await checkAndPromptEnvVariables('mongodb');
     this.schemaContent = `generator client {
                 provider = "prisma-client-js"
@@ -94,6 +108,7 @@ export class PrismaConfigCommand extends CommandRunner {
                 email       String      @unique
                 password    String              
             }`;
+    console.log('Prisma with MongoDB configured successfully');
   }
 
   @Option({
@@ -106,8 +121,20 @@ export class PrismaConfigCommand extends CommandRunner {
     const postgresName = process.env.POSTGRES_DB;
     console.log('Configuring Prisma with PostgreSQL...');
     await checkAndPromptEnvVariables('postgres');
+    await this.installPrismaDependencies();
+    await this.initPrisma();
+    await writeFile(
+      join(process.cwd(), 'src', 'prisma.service.ts'),
+      this.prismaServiceContenu,
+    );
+    const importPrisma = `import { PrismaService } from './prisma.service'; `;
+    const prismaProvider = 'PrismaService';
 
-    const connectionString = `mysql://${postgresHost}:${postgresPort}/${postgresName}`;
+    await this.fileManagerService.addProviderToAppModule(
+      importPrisma,
+      prismaProvider,
+    );
+    const connectionString = `postgresql://${postgresHost}:${postgresPort}/${postgresName}`;
     this.schemaContent = `
         generator client {
             provider = "prisma-client-js"
@@ -124,6 +151,7 @@ export class PrismaConfigCommand extends CommandRunner {
             email       String      @unique
             password    String
         }`;
+    console.log('Prisma with PostgreSQL configured successfully');
   }
 
   private async initPrisma(): Promise<void> {
@@ -137,7 +165,7 @@ export class PrismaConfigCommand extends CommandRunner {
     console.log('Initialized Prisma schema successfully');
   }
   private installPrismaDependencies(): void {
-    const spinner = new Spinner('Installing TypeORM ... %s');
+    const spinner = new Spinner('Installing Prisma dependencies ... %s');
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     this.packageManagerService.installDependency('prisma', true);

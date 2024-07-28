@@ -4,22 +4,16 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   try {
-    console.log('Starting application context...');
     const appContext = await NestFactory.createApplicationContext(AppModule, {
       logger: ['error'],
     });
 
     const configureCommand = appContext.get(ConfigureCommand);
-
-    console.log('Running configure command...');
     await configureCommand.run();
-
     console.log('Configuration complete.');
+    await configureCommand.run();
   } catch (error) {
     console.error('An error occurred during configuration:', error);
-  } finally {
-    return;
-    process.exit(0);
   }
 }
 

@@ -173,7 +173,7 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   // function to add local auth (email/password)
-  async runLocalAuth(): Promise<void> {
+  async setupAuth(): Promise<void> {
     try {
       // install passport.js dependencies
       await this.installDependencies();
@@ -195,14 +195,14 @@ export class AuthConfigCommand extends CommandRunner {
       const { strategy } = await prompt({
         type: 'list',
         name: 'strategy',
-        message: 'Choose an autentication strategy:',
+        message: colors.cyan.italic('Choose an autentication strategy:'),
         choices: [
           {
             name: colors.yellow('JWT (JSON Web Token)'),
             value: 'JWT (JSON Web Token)',
           },
           { name: colors.green('Session'), value: 'Session' },
-          { name: colors.blue('Cookies'), value: 'Cookies' },
+          { name: colors.red('Cookies'), value: 'Cookies' },
         ],
       });
       switch (strategy) {
@@ -224,8 +224,9 @@ export class AuthConfigCommand extends CommandRunner {
       const { addGoogleAuth } = await prompt({
         type: 'confirm',
         name: 'addGoogleAuth',
-        message:
+        message: colors.cyan.italic(
           'Would you like to integrate authentication using Google in your project?',
+        ),
       });
       if (addGoogleAuth) {
         await this.runGoogleAuth();
@@ -234,8 +235,9 @@ export class AuthConfigCommand extends CommandRunner {
       const { addFbAuth } = await prompt({
         type: 'confirm',
         name: 'addFbAuth',
-        message:
+        message: colors.cyan.italic(
           'Would you like to integrate authentication using Facebook in your project?',
+        ),
       });
       if (addFbAuth) {
         await this.runFacebookAuth();
@@ -244,8 +246,9 @@ export class AuthConfigCommand extends CommandRunner {
       const { addGithubAuth } = await prompt({
         type: 'confirm',
         name: 'addGithubAuth',
-        message:
+        message: colors.cyan.italic(
           'Would you like to integrate authentication using Github in your project?',
+        ),
       });
       if (addGithubAuth) {
         await this.runGithubAuth();

@@ -17,7 +17,6 @@ import * as colors from 'colors';
 })
 export class ConfigureCommand extends CommandRunner {
   constructor(
-    private readonly packageManagerService: PackageManagerService,
     private readonly mikroOrmConfigCmd: MikroOrmConfigCommand,
     private readonly authConfigCmd: AuthConfigCommand,
     private readonly drizzleConfigCmd: DrizzleConfigCommand,
@@ -34,30 +33,48 @@ export class ConfigureCommand extends CommandRunner {
       type: 'list',
       name: 'configType',
 
-      message: colors.blue('What would you like to configure?'),
+      message: colors.cyan.italic('What would you like to configure?'),
       choices: [
-        { name: colors.yellow('Authentication'), value: 'Authentication' },
-        { name: colors.green('Database with ORM'), value: 'Database with ORM' },
+        {
+          name: colors.yellow('Setup Authentication strategies and services'),
+          value: 'Authentication',
+        },
+        {
+          name: colors.green('Configure Database with ORM'),
+          value: 'Database with ORM',
+        },
+        {
+          name: colors.blue('Exit'),
+          value: 'Exit',
+        },
       ],
       loop: false,
     });
 
     if (configType === 'Authentication') {
       await this.runAuthConfig();
-    } else {
+    } else if (configType === 'Database with ORM') {
       await this.runDbConfig();
+    } else {
+      console.log(colors.yellow('Exiting configuration. Goodbye!'));
+      process.exit(0);
     }
   }
 
   private async runAuthConfig(): Promise<void> {
-    await this.authConfigCmd.runLocalAuth();
+    await this.authConfigCmd.setupAuth();
   }
   private async runDbConfig(): Promise<void> {
     const { dbType } = await inquirer.prompt({
       type: 'list',
       name: 'dbType',
-      message: 'Choose Database:',
-      choices: ['MySQL', 'PostgreSQL', 'SQLite', 'MongoDB'],
+      message: colors.cyan.italic('Choose Database:'),
+      choices: [
+        { name: colors.yellow('MySQL'), value: 'MySQL' },
+        { name: colors.green('PostgreSQL'), value: 'PostgreSQL' },
+        { name: colors.blue('SQLite'), value: 'SQLite' },
+        { name: colors.red('MongoDB'), value: 'MongoDB' },
+      ],
     });
     let ormType;
     switch (dbType) {
@@ -65,7 +82,7 @@ export class ConfigureCommand extends CommandRunner {
         ({ ormType } = await inquirer.prompt({
           type: 'list',
           name: 'ormType',
-          message: 'Choose ORM:',
+          message: colors.cyan.italic('Choose ORM:'),
           choices: [
             { name: colors.yellow('Drizzle'), value: 'Drizzle' },
             { name: colors.green('MikroORM'), value: 'MikroORM' },
@@ -89,6 +106,8 @@ export class ConfigureCommand extends CommandRunner {
             await this.typeOrmConfigCmd.runWithMySQL();
             break;
           default:
+            console.log('Setting up MySQL with TypeORM by default...');
+            await this.typeOrmConfigCmd.runWithMySQL();
             break;
         }
         break;
@@ -126,6 +145,8 @@ export class ConfigureCommand extends CommandRunner {
             await this.prismaConfigCmd.runWithSql();
             break;
           default:
+            console.log('Setting up PostgreSQL with Prisma by default...');
+            await this.prismaConfigCmd.runWithSql();
             break;
         }
         break;
@@ -136,7 +157,7 @@ export class ConfigureCommand extends CommandRunner {
           message: 'Choose ORM:',
           choices: [{ name: colors.yellow('Drizzle'), value: 'Drizzle' }],
         });
-        await this.drizzleConfigCmd.runWithSqlite();
+        await this.drizzleConfigCmd.runWithSQLite();
         break;
 
       case 'MongoDB':
@@ -161,23 +182,15 @@ export class ConfigureCommand extends CommandRunner {
             await this.prismaConfigCmd.runWithMongo();
             break;
           default:
+            console.log('Setting up MongoDB with Mongoose by default...');
+            await this.mongooseConfigCmd.run();
             break;
         }
         break;
       default:
+        console.log('Setting up PostgreSQL with Prisma by default...');
+        await this.prismaConfigCmd.runWithSql();
         break;
     }
-  }
-
-  private async addJwtAuth() {
-    await this.authConfigCmd.addJwtAuth();
-  }
-
-  private async addSessionAuth() {
-    await this.authConfigCmd.addSessionAuth();
-  }
-
-  private async addCookiesAuth() {
-    await this.authConfigCmd.addCookiesAuth();
   }
 }

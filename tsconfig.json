@@ -24,8 +24,12 @@
     "_build",
     "temp",
     "src/users",
+    "src/user",
     "src/mailer",
-    "src/auth"
+    "src/auth",
+    "src/drizzle",
+    "src/database",
+    "src/datasource"
   ],
   "include": ["src/**/*"],
   "watchOptions": {
@@ -36,8 +40,12 @@
       "_build",
       "temp/*",
       "src/users",
+      "src/user",
       "src/mailer",
-      "src/auth"
+      "src/auth",
+      "src/drizzle",
+      "src/database",
+      "src/datasource"
     ]
   }
 }
