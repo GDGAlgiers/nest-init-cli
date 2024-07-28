@@ -175,28 +175,16 @@ export class AuthConfigCommand extends CommandRunner {
   // function to add local auth (email/password)
   async setupAuth(): Promise<void> {
     try {
-      // install passport.js dependencies
-      await this.installDependencies();
-      await this.initAuth();
-      await this.authFileManager.createServices();
-      await this.fileManagerService.addImportsToAppModule(
-        `import { AuthModule } from './auth/auth.module';`,
-        `AuthModule`,
-      );
-
-      const folderExists = await this.fileManagerService.doesFolderExist(
-        'users',
-      );
-      if (!folderExists) {
-        await generateUserResource();
-      }
-      console.log('Authentication services have been successfully added.');
-
       const { strategy } = await prompt({
         type: 'list',
         name: 'strategy',
         message: colors.cyan.italic('Choose an autentication strategy:'),
         choices: [
+          {
+            name: colors.blue('Local'),
+            value: 'Local',
+          },
+          ,
           {
             name: colors.yellow('JWT (JSON Web Token)'),
             value: 'JWT (JSON Web Token)',
@@ -214,6 +202,24 @@ export class AuthConfigCommand extends CommandRunner {
           break;
         case 'Cookies':
           await this.addCookiesAuth();
+          break;
+        case 'Local':
+          // install passport.js dependencies
+          await this.installDependencies();
+          await this.initAuth();
+          await this.authFileManager.createServices();
+          await this.fileManagerService.addImportsToAppModule(
+            `import { AuthModule } from './auth/auth.module';`,
+            `AuthModule`,
+          );
+
+          const folderExists = await this.fileManagerService.doesFolderExist(
+            'users',
+          );
+          if (!folderExists) {
+            await generateUserResource();
+          }
+          console.log('Authentication services have been successfully added.');
           break;
         default:
           console.log('Adding JWT strategy by default...');
