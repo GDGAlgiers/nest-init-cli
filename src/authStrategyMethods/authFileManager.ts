@@ -207,6 +207,154 @@ export class AuthModule {}
     await this.createFile(filename, authModuleContent, 'auth');
   }
 
+  async createJwtService(): Promise<void> {
+    let filename = ``;
+    let authServiceContent = `
+/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+
+@Injectable()
+export class AuthService {
+  constructor(private usersService: UsersService) {}
+
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.usersService.findOne(username);
+    if (user && user.password === pass) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async login(req: any, user: any) {
+    req.res.cookie('userId', user.id, { httpOnly: true });
+    return {
+      message: 'Login successful',
+    };
+  }
+
+  async register(username: string, pass: string) {
+    const user = await this.usersService.create(username, pass);
+    return user;
+  }
+
+  async logout(req: any) {
+    req.res.clearCookie('userId');
+    return {
+      message: 'Logout successful',
+    };
+  }
+}
+`;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent, 'auth');
+  }
+  async createSessionService(): Promise<void> {
+    let filename = ``;
+    let authServiceContent = `
+/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+
+@Injectable()
+export class AuthService {
+  constructor(private usersService: UsersService) {}
+
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.usersService.findOne(username);
+    if (user && user.password === pass) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async login(req: any, user: any) {
+    req.session.userId = user.id;
+    return {
+      message: 'Login successful',
+    };
+  }
+
+  async register(username: string, pass: string) {
+    const user = await this.usersService.create(username, pass);
+    return user;
+  }
+
+  async logout(req: any) {
+    req.session.destroy();
+    return {
+      message: 'Logout successful',
+    };
+  }
+}
+`;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent, 'auth');
+  }
+  async createCookiesService(): Promise<void> {
+    let filename = ``;
+    let authServiceContent = `
+/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+
+@Injectable()
+export class AuthService {
+  constructor(private usersService: UsersService) {}
+
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.usersService.findOne(username);
+    if (user && user.password === pass) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async login(req: any, user: any) {
+    req.res.cookie('userId', user.id, { httpOnly: true });
+    return {
+      message: 'Login successful',
+    };
+  }
+
+  async register(username: string, pass: string) {
+    const user = await this.usersService.create(username, pass);
+    return user;
+  }
+
+  async logout(req: any) {
+    req.res.clearCookie('userId');
+    return {
+      message: 'Logout successful',
+    };
+  }
+}
+`;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent, 'auth');
+  }
+
+  async createAuthModule(): Promise<void> {
+    let authModuleContent = `import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { UsersModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
+
+
+@Module({
+  imports: [UsersModule, PassportModule],
+  providers: [AuthService],
+  exports: [AuthService],
+
+})
+export class AuthModule {}
+`;
+    const filename = `auth.module.ts`;
+    await this.createFile(filename, authModuleContent, 'auth');
+  }
   async createGoogleAuthStrategy(): Promise<void> {
     let filename = 'google.strategy.ts';
     let googleStrategyContent = `/* eslint-disable prettier/prettier */
