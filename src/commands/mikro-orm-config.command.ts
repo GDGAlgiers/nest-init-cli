@@ -6,7 +6,9 @@ import { writeFile } from 'fs/promises';
 import { PackageManagerService } from '../utils/packageManager.service';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @Command({
   name: 'install-mikroorm',
   description: 'Install MikroORM',
@@ -109,6 +111,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('postgres');
     await this.installPostgresDependencies();
     await this.writeToFile('-psql');
+    console.log('Configured MikroORM with PostgreSQL successfully');
   }
 
   @Option({
@@ -121,6 +124,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('mysql');
     await this.installMysqlDependencies();
     await this.writeToFile('-my');
+    console.log('Configured MikroORM with MySQL successfully');
   }
 
   @Option({
@@ -133,6 +137,7 @@ export class DatabasePostgresModule { }`;
     await checkAndPromptEnvVariables('mongodb');
     await this.installMongoDependencies();
     await this.writeToFile('-m');
+    console.log('Configured MikroORM with MongoDB successfully');
   }
 
   private async installPostgresDependencies(): Promise<void> {

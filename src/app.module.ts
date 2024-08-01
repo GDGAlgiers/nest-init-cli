@@ -1,7 +1,6 @@
 /* eslint-disable prettier/prettier */
 
 import { Module } from '@nestjs/common';
-
 import { CommandRunnerModule } from 'nest-commander';
 import { PrismaConfigCommand } from './commands/prisma-config.command';
 import { PackageManagerService } from './utils/packageManager.service';
@@ -17,24 +16,26 @@ import { FileManager } from './authStrategyMethods/utils/fileManager';
 import { AppService } from './app.service';
 import { AuthFileManager } from './authStrategyMethods/authFileManager';
 import { MikroOrmConfigCommand } from './commands/mikro-orm-config.command';
+import { ConfigureCommand } from './commands/configure.command';
 
 @Module({
+  imports: [CommandRunnerModule],
   providers: [
-    AuthConfigCommand,
-    SequelizeConfigCommand,
+    ConfigureCommand,
     PrismaConfigCommand,
     TypeOrmConfigCommand,
-    PackageManagerService,
-    FileManagerService,
-    FileManager,
-    AppService,
-    AuthFileManager,
-    MikroOrmConfigCommand,
     DrizzleConfigCommand,
     MongooseConfigCommand,
+    SequelizeConfigCommand,
+    AuthConfigCommand,
+    MikroOrmConfigCommand,
+    PackageManagerService,
+    FileManagerService,
     CommandExecutionService,
+    FileManager,
+    AuthFileManager,
+    AppService,
   ],
-  imports: [CommandRunnerModule],
   controllers: [AppController],
 })
 export class AppModule {}

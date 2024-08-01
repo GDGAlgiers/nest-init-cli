@@ -7,7 +7,9 @@ import { writeFile } from 'fs/promises';
 import { FileManagerService } from 'src/utils/fileManager.service';
 import { CommandExecutionService } from 'src/utils/commandExecutionService.service';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @Command({ name: 'install-mongoose', description: 'Install Mongoose' })
 export class MongooseConfigCommand extends CommandRunner {
   constructor(
@@ -61,7 +63,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
       await checkAndPromptEnvVariables('mongodb');
       await this.installMongooseDependencies();
       await writeFile(
-        join(process.cwd(), 'src', 'Mongoose.service.ts'),
+        join(process.cwd(), 'src', 'mongoose.service.ts'),
         this.mongooseServiceContenu,
       );
       const importMongooseModule = `import { MongooseModule } from '@nestjs/mongoose';`;
@@ -77,9 +79,8 @@ export const UserSchema = SchemaFactory.createForClass(User);
         importMongooseModule,
         mongooseImport,
       );
-      console.log('Mongoose configured successfully');
-
       await this.intializeUserModule();
+      console.log('Configured Mongoose with MongoDB successfully');
     } catch (err) {
       console.error(err);
     }

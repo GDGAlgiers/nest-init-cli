@@ -3,12 +3,15 @@ import { Command, CommandRunner } from 'nest-commander';
 import { Spinner } from 'cli-spinner';
 import { prompt } from 'inquirer';
 import { PackageManagerService } from '../utils/packageManager.service';
-import { FileManagerService } from '../utils/fileManager.service'; // Adjust path based on actual file location
-import { AuthFileManager } from '../authStrategyMethods/authFileManager'; // Adjust path based on actual file location
+import { FileManagerService } from '../utils/fileManager.service';
+import { AuthFileManager } from '../authStrategyMethods/authFileManager';
 import { FileManager } from '../authStrategyMethods/utils/fileManager';
 import { checkAndPromptEnvVariables } from 'src/utils/check-env-variables';
 import { generateUserResource } from 'src/authStrategyMethods/utils/generate-user-resource';
+import { Injectable } from '@nestjs/common';
+import * as colors from 'colors';
 
+@Injectable()
 @Command({ name: 'add-auth', description: 'Add authentication services' })
 export class AuthConfigCommand extends CommandRunner {
   constructor(
@@ -22,71 +25,16 @@ export class AuthConfigCommand extends CommandRunner {
 
   async run(): Promise<void> {
     try {
-      await this.initAuth();
-      await this.authFileManager.createServices();
-      await this.fileManagerService.addImportsToAppModule(
-        `import { AuthModule } from './auth/auth.module';`,
-        `AuthModule`,
-      );
-      const folderExists = await this.fileManagerService.doesFolderExist(
-        'users',
-      );
-      if (!folderExists) {
-        await generateUserResource();
-      }
-      // install passport.js dependencies
-      await this.installDependencies();
-      const { addAuth } = await prompt({
-        type: 'confirm',
-        name: 'addAuth',
-        message:
-          'Would you like to include authentication features such as login and registration in your project?',
-      });
-      if (addAuth) {
-        await this.runLocalAuth();
-      }
-      const { addGoogleAuth } = await prompt({
-        type: 'confirm',
-        name: 'addGoogleAuth',
-        message:
-          'Would you like to integrate authentication using Google in your project?',
-      });
-
-      if (addGoogleAuth) {
-        await this.runGoogleAuth();
-      }
-
-      const { addFbAuth } = await prompt({
-        type: 'confirm',
-        name: 'addFbAuth',
-        message:
-          'Would you like to integrate authentication using Facebook in your project?',
-      });
-
-      if (addFbAuth) {
-        await this.runFacebookAuth();
-      }
-      const { addGithubAuth } = await prompt({
-        type: 'confirm',
-        name: 'addGithubAuth',
-        message:
-          'Would you like to integrate authentication using Github in your project?',
-      });
-
-      if (addGithubAuth) {
-        await this.runGithubAuth();
-      }
-      console.log('Authentication services have been successfully added.');
     } catch (error) {
       console.error(
         'Error occurred while configuring authentication services:',
         error,
       );
-    } finally {
     }
   }
+
   // function to add Google OAuth Service
-  private async runGoogleAuth(): Promise<void> {
+  async runGoogleAuth(): Promise<void> {
     const googleAuthSpinner = new Spinner(
       'Installing Google auth dependencies... %s',
     );
@@ -129,7 +77,7 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   // function to add Facebook OAuth
-  private async runFacebookAuth(): Promise<void> {
+  async runFacebookAuth(): Promise<void> {
     const facebookAuthSpinner = new Spinner(
       'Installing Facebook auth dependencies... %s',
     );
@@ -175,7 +123,7 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   // function to add github auth
-  private async runGithubAuth(): Promise<void> {
+  async runGithubAuth(): Promise<void> {
     const githubAuthSpinner = new Spinner(
       'Installing Github auth dependencies... %s',
     );
@@ -225,35 +173,101 @@ export class AuthConfigCommand extends CommandRunner {
   }
 
   // function to add local auth (email/password)
-  private async runLocalAuth(): Promise<void> {
-    const { authType } = await prompt({
-      type: 'list',
-      name: 'authType',
-      message: 'Choose auth type:',
-      choices: ['JWT', 'Cookies', 'Session'],
-    });
+  async setupAuth(): Promise<void> {
+    try {
+      const { strategy } = await prompt({
+        type: 'list',
+        name: 'strategy',
+        message: colors.cyan.italic('Choose an autentication strategy:'),
+        choices: [
+          {
+            name: colors.blue('Local'),
+            value: 'Local',
+          },
+          ,
+          {
+            name: colors.yellow('JWT (JSON Web Token)'),
+            value: 'JWT (JSON Web Token)',
+          },
+          { name: colors.green('Session'), value: 'Session' },
+          { name: colors.red('Cookies'), value: 'Cookies' },
+        ],
+      });
+      switch (strategy) {
+        case 'JWT (JSON Web Token)':
+          await this.addJwtAuth();
+          break;
+        case 'Session':
+          await this.addSessionAuth();
+          break;
+        case 'Cookies':
+          await this.addCookiesAuth();
+          break;
+        case 'Local':
+          // install passport.js dependencies
+          await this.installDependencies();
+          await this.initAuth();
+          await this.authFileManager.createServices();
+          await this.fileManagerService.addImportsToAppModule(
+            `import { AuthModule } from './auth/auth.module';`,
+            `AuthModule`,
+          );
 
-    console.log(`Selected auth type: ${authType}`);
-    const authSpinner = new Spinner('Installing auth dependencies... %s');
-    authSpinner.setSpinnerString('|/-\\');
-    authSpinner.start();
+          const folderExists = await this.fileManagerService.doesFolderExist(
+            'users',
+          );
+          if (!folderExists) {
+            await generateUserResource();
+          }
+          console.log('Authentication services have been successfully added.');
+          break;
+        default:
+          console.log('Adding JWT strategy by default...');
+          await this.addJwtAuth();
+          break;
+      }
 
-    await this.packageManagerService.installDependency('passport-local');
-    await this.packageManagerService.installDependency('@types/passport-local');
+      const { addGoogleAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGoogleAuth',
+        message: colors.cyan.italic(
+          'Would you like to integrate authentication using Google in your project?',
+        ),
+      });
+      if (addGoogleAuth) {
+        await this.runGoogleAuth();
+      }
 
-    if (authType === 'JWT') {
-      await this.addJwtAuth();
-    } else if (authType === 'Session') {
-      await this.addSessionAuth();
-    } else {
-      this.addCookiesAuth();
+      const { addFbAuth } = await prompt({
+        type: 'confirm',
+        name: 'addFbAuth',
+        message: colors.cyan.italic(
+          'Would you like to integrate authentication using Facebook in your project?',
+        ),
+      });
+      if (addFbAuth) {
+        await this.runFacebookAuth();
+      }
+
+      const { addGithubAuth } = await prompt({
+        type: 'confirm',
+        name: 'addGithubAuth',
+        message: colors.cyan.italic(
+          'Would you like to integrate authentication using Github in your project?',
+        ),
+      });
+      if (addGithubAuth) {
+        await this.runGithubAuth();
+      }
+    } catch (error) {
+      console.error('An error has occurred while setting up authentication');
     }
-
-    authSpinner.stop(true);
   }
 
   // function to handle adding JWT strategy
-  private async addJwtAuth(): Promise<void> {
+  async addJwtAuth(): Promise<void> {
+    const spinner = new Spinner('Installing JWT dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
     await this.packageManagerService.installDependency('@nestjs/jwt');
     await this.packageManagerService.installDependency('passport-jwt');
     await this.packageManagerService.installDependency('jsonwebtoken');
@@ -268,10 +282,6 @@ export class AuthConfigCommand extends CommandRunner {
       `import { UsersService } from 'src/users/users.service';`,
       'UsersService',
     );
-    // await this.fileManager.addImportsToAuthModule(
-    //   `import { JwtModule } from '@nestjs/jwt';`,
-    //   `JwtModule.register({ secret: process.env.JWT_SECRET || "2024", })`,
-    // );
     await this.fileManager.addImportsToAuthModule(
       `import { MailerModule } from '@nestjs-modules/mailer';`,
       `MailerModule.forRoot({
@@ -285,12 +295,19 @@ export class AuthConfigCommand extends CommandRunner {
       },
     })`,
     );
-    console.log('you should fix user services to use jwt strategy');
+    spinner.stop(true);
   }
 
   // function to handle adding express session strategy
-  private async addSessionAuth(): Promise<void> {
+  async addSessionAuth(): Promise<void> {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
     await this.packageManagerService.installDependency('express-session');
+    await this.packageManagerService.installDependency(
+      '@types/express-session',
+      true,
+    );
     await this.initFolder('protected');
     await this.authFileManager.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
@@ -306,10 +323,14 @@ export class AuthConfigCommand extends CommandRunner {
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule.register({ session: true })`,
     );
+    spinner.stop(false);
   }
 
   // function to handle adding cookies strategy
-  private async addCookiesAuth(): Promise<void> {
+  async addCookiesAuth(): Promise<void> {
+    const spinner = new Spinner('Installing dependencies  ... %s');
+    spinner.setSpinnerString('|/-\\');
+    spinner.start();
     await this.packageManagerService.installDependency('express-session');
     await this.initFolder('protected');
     await this.authFileManager.addCookiesStrategy();
@@ -326,18 +347,31 @@ export class AuthConfigCommand extends CommandRunner {
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule`,
     );
+    spinner.stop(true);
   }
 
   // function to install passport.js dependencies
-  private installDependencies(): void {
+  private async installDependencies(): Promise<void> {
     const spinner = new Spinner('Installing Passport.js dependencies  ... %s');
-    spinner.setSpinnerString('|/-\\');
-    spinner.start();
-    this.packageManagerService.installDependency('passport');
-    this.packageManagerService.installDependency('@nestjs/passport');
-    this.packageManagerService.installDependency('@nestjs-modules/mailer');
-    spinner.stop(true);
-    console.log('Passport.js dependencies installed successfully.');
+    try {
+      spinner.setSpinnerString('|/-\\');
+      spinner.start();
+      await this.packageManagerService.installDependency('bcryptjs');
+      await this.packageManagerService.installDependency('passport-local');
+      await this.packageManagerService.installDependency(
+        '@types/passport-local',
+      );
+      await this.packageManagerService.installDependency('passport');
+      await this.packageManagerService.installDependency('@nestjs/passport');
+      await this.packageManagerService.installDependency(
+        '@nestjs-modules/mailer',
+      );
+      console.log('Passport.js dependencies installed successfully.');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      spinner.stop(true);
+    }
   }
 
   // creates the auth directory if it doesn't exist
@@ -347,6 +381,7 @@ export class AuthConfigCommand extends CommandRunner {
     if (!authExists) {
       try {
         await this.fileManagerService.createDirectoryIfNotExists('src/auth');
+        await this.fileManagerService.createDirectoryIfNotExists('src/mailer');
       } catch (err) {
         console.error(
           'Error while initializing authentication service and module:',

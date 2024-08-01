@@ -2,7 +2,7 @@
 import { prompt } from 'inquirer';
 import { appendFileSync, readFileSync, existsSync } from 'fs';
 import { config } from 'dotenv';
-
+import * as colors from 'colors';
 // Load environment variables from the .env file
 config();
 
@@ -82,16 +82,18 @@ export async function checkAndPromptEnvVariables(
 
   if (missingEnvVariables.length > 0) {
     console.log(
-      `The following environment variables are missing: ${missingEnvVariables.join(
-        ', ',
-      )}`,
+      colors.red(
+        `The following environment variables are missing: ${missingEnvVariables.join(
+          ', ',
+        )}`,
+      ),
     );
 
     const answers = await prompt(
       missingEnvVariables.map((envVar) => ({
         type: 'input',
         name: envVar,
-        message: `Please enter the value for ${envVar}:`,
+        message: colors.magenta(`Please enter the value for ${envVar}:`),
       })),
     );
 
