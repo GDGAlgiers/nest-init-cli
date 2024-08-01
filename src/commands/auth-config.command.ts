@@ -191,6 +191,7 @@ export class AuthConfigCommand extends CommandRunner {
           },
           { name: colors.green('Session'), value: 'Session' },
           { name: colors.red('Cookies'), value: 'Cookies' },
+          { name: colors.cyan('Skip'), value: 'Skip' },
         ],
       });
       switch (strategy) {
@@ -220,6 +221,8 @@ export class AuthConfigCommand extends CommandRunner {
             await generateUserResource();
           }
           console.log('Authentication services have been successfully added.');
+          break;
+        case 'Skip':
           break;
         default:
           console.log('Adding JWT strategy by default...');
