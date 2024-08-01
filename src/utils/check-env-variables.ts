@@ -2,7 +2,7 @@
 import { prompt } from 'inquirer';
 import { appendFileSync, readFileSync, existsSync } from 'fs';
 import { config } from 'dotenv';
-import colors from 'colors';
+import * as colors from 'colors';
 // Load environment variables from the .env file
 config();
 
