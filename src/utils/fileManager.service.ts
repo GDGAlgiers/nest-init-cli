@@ -109,7 +109,6 @@ export class FileManagerService {
 
   async doesFolderExist(folder: string): Promise<boolean> {
     const folderPath = join(process.cwd(), 'src', folder);
-    console.log(folderPath);
     // Check if the folder exists
     return existsSync(folderPath);
   }
