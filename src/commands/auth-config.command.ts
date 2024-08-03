@@ -184,7 +184,6 @@ export class AuthConfigCommand extends CommandRunner {
             name: colors.blue('Local'),
             value: 'Local',
           },
-          ,
           {
             name: colors.yellow('JWT (JSON Web Token)'),
             value: 'JWT (JSON Web Token)',
@@ -208,6 +207,7 @@ export class AuthConfigCommand extends CommandRunner {
           await this.addLocalAuth();
           break;
         case 'Skip':
+          console.log("Skipping authentication setup...");      
           break;
         default:
           console.log('Adding JWT strategy by default...');
