@@ -256,9 +256,7 @@ export class AuthConfigCommand extends CommandRunner {
     // install passport.js dependencies
     await this.installDependencies();
     await this.initAuth();
-    await this.packageManagerService.installDependency(
-      '@nestjs-modules/mailer',
-    );
+
     await this.authFileManager.createServices();
     await this.fileManagerService.addImportsToAppModule(
       `import { AuthModule } from './auth/auth.module';`,
@@ -276,8 +274,6 @@ export class AuthConfigCommand extends CommandRunner {
     // install passport.js dependencies
     await this.installDependencies();
     await this.initAuth();
-    await this.authFileManager.createJwtService();
-    await this.authFileManager.createAuthModule();
     await this.fileManagerService.addImportsToAppModule(
       `import { AuthModule } from './auth/auth.module';`,
       `AuthModule`,
@@ -301,7 +297,7 @@ export class AuthConfigCommand extends CommandRunner {
       'JwtStrategy',
     );
     await this.fileManager.addProviderToAuthModule(
-      `import { UsersService } from 'src/users/users.service';`,
+      `import { UsersService } from '../users/users.service';`,
       'UsersService',
     );
     await this.fileManager.addImportsToAuthModule(
@@ -325,13 +321,16 @@ export class AuthConfigCommand extends CommandRunner {
     // install passport.js dependencies
     await this.installDependencies();
     await this.initAuth();
-    await this.authFileManager.createSessionService();
     await this.authFileManager.createAuthModule();
+    await this.fileManagerService.createDirectoryIfNotExists('src/protected');
+    await this.fileManager.addProviderToAuthModule(
+      `import { ProtectedModule } from '../protected/protected.module';`,
+      'ProtectedModule',
+    );
     await this.fileManagerService.addImportsToAppModule(
       `import { AuthModule } from './auth/auth.module';`,
       `AuthModule`,
     );
-
     const folderExists = await this.fileManagerService.doesFolderExist('users');
     if (!folderExists) {
       await generateUserResource();
@@ -345,10 +344,9 @@ export class AuthConfigCommand extends CommandRunner {
       '@types/express-session',
       true,
     );
-    await this.initFolder('protected');
     await this.authFileManager.addSessionStrategy();
     await this.fileManagerService.addImportsToAppModule(
-      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `import { ProtectedModule } from './protected/protected.module';`,
       `ProtectedModule`,
     );
 
@@ -360,6 +358,23 @@ export class AuthConfigCommand extends CommandRunner {
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule.register({ session: true })`,
     );
+    await this.fileManager.addProviderToAuthModule(
+      `import { UsersService } from '../users/users.service';`,
+      'UsersService',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { MailerModule } from '@nestjs-modules/mailer';`,
+      `MailerModule.forRoot({
+      transport: {
+        host: 'smtp.example.com',
+        port: 587,
+        auth: {
+          user: 'username',
+          pass: 'password',
+        },
+      },
+    })`,
+    );
     spinner.stop(false);
   }
 
@@ -368,13 +383,16 @@ export class AuthConfigCommand extends CommandRunner {
     // install passport.js dependencies
     await this.installDependencies();
     await this.initAuth();
-    await this.authFileManager.createCookiesService();
     await this.authFileManager.createAuthModule();
+    await this.fileManagerService.createDirectoryIfNotExists('src/protected');
+    await this.fileManager.addProviderToAuthModule(
+      `import { ProtectedModule } from '../protected/protected.module';`,
+      'ProtectedModule',
+    );
     await this.fileManagerService.addImportsToAppModule(
       `import { AuthModule } from './auth/auth.module';`,
       `AuthModule`,
     );
-
     const folderExists = await this.fileManagerService.doesFolderExist('users');
     if (!folderExists) {
       await generateUserResource();
@@ -384,10 +402,9 @@ export class AuthConfigCommand extends CommandRunner {
     spinner.setSpinnerString('|/-\\');
     spinner.start();
     await this.packageManagerService.installDependency('express-session');
-    await this.initFolder('protected');
     await this.authFileManager.addCookiesStrategy();
     await this.fileManagerService.addImportsToAppModule(
-      `import { ProtectedModule } from './auth/protected/protected.module';`,
+      `import { ProtectedModule } from './protected/protected.module';`,
       `ProtectedModule`,
     );
 
@@ -398,6 +415,23 @@ export class AuthConfigCommand extends CommandRunner {
     await this.fileManager.addImportsToAuthModule(
       `import { PassportModule } from '@nestjs/passport';`,
       `PassportModule`,
+    );
+    await this.fileManager.addProviderToAuthModule(
+      `import { UsersService } from '../users/users.service';`,
+      'UsersService',
+    );
+    await this.fileManager.addImportsToAuthModule(
+      `import { MailerModule } from '@nestjs-modules/mailer';`,
+      `MailerModule.forRoot({
+      transport: {
+        host: 'smtp.example.com',
+        port: 587,
+        auth: {
+          user: 'username',
+          pass: 'password',
+        },
+      },
+    })`,
     );
     spinner.stop(true);
   }
@@ -415,6 +449,9 @@ export class AuthConfigCommand extends CommandRunner {
       );
       await this.packageManagerService.installDependency('passport');
       await this.packageManagerService.installDependency('@nestjs/passport');
+      await this.packageManagerService.installDependency(
+        '@nestjs-modules/mailer',
+      );
       console.log('Passport.js dependencies installed successfully.');
     } catch (error) {
       console.error(error);

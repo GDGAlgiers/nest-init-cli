@@ -18,7 +18,7 @@ export class AuthFileManager {
     try {
       const filePath = join(authFolderPath, filename);
       await writeFile(filePath, moduleContent);
-      console.log(` ${filename} created successfully `);
+      console.log(`${filename} created successfully `);
     } catch (err) {
       console.error(`Failed to create ${filename} in auth folder:`, err);
       throw err; // Rethrow the error to handle it further if needed
@@ -128,6 +128,59 @@ export class AuthService {
 `;
     filename = `auth.service.ts`;
     await this.createFile(filename, authServiceContent, 'auth');
+
+    const authControllerContent = `/* eslint-disable prettier/prettier */
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from './auth.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @UseGuards(AuthGuard('local'))
+  @Post('login')
+  async login(@Request() req) {
+    // Return the user data from the request
+    return req.user;
+  }
+
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
+  }
+
+  @Post('request-password-reset')
+  async requestPasswordReset(@Body('email') email: string) {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('email') email: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.resetPassword(email, newPassword);
+  }
+
+  @UseGuards(AuthGuard('local'))
+  @Get('profile')
+  getProfile(@Request() req) {
+    // Return the authenticated user profile
+    return req.user;
+  }
+}`;
+    filename = `auth.controller.ts`;
+    await this.createFile(filename, authControllerContent, 'auth');
+
     let LocalStrategyContent = `/* eslint-disable prettier/prettier */
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
@@ -191,8 +244,8 @@ export class MailerModule {}
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
+import { MailerModule } from '../mailer/mailer.module';
 import { LocalStrategy } from './local.strategy';
-import { MailerModule } from 'src/mailer/mailer.module';
 
 
 @Module({
@@ -207,129 +260,104 @@ export class AuthModule {}
     await this.createFile(filename, authModuleContent, 'auth');
   }
 
-  async createJwtService(): Promise<void> {
-    let filename = ``;
-    let authServiceContent = `
-/* eslint-disable prettier/prettier */
-import { Injectable } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-
-@Injectable()
-export class AuthService {
-  constructor(private usersService: UsersService) {}
-
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
-    if (user && user.password === pass) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
-  }
-
-  async login(req: any, user: any) {
-    req.res.cookie('userId', user.id, { httpOnly: true });
-    return {
-      message: 'Login successful',
-    };
-  }
-
-  async register(username: string, pass: string) {
-    const user = await this.usersService.create(username, pass);
-    return user;
-  }
-
-  async logout(req: any) {
-    req.res.clearCookie('userId');
-    return {
-      message: 'Logout successful',
-    };
-  }
-}
-`;
-    filename = `auth.service.ts`;
-    await this.createFile(filename, authServiceContent, 'auth');
-  }
-  async createSessionService(): Promise<void> {
-    let filename = ``;
-    let authServiceContent = `
-/* eslint-disable prettier/prettier */
-import { Injectable } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-
-@Injectable()
-export class AuthService {
-  constructor(private usersService: UsersService) {}
-
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
-    if (user && user.password === pass) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
-  }
-
-  async login(req: any, user: any) {
-    req.session.userId = user.id;
-    return {
-      message: 'Login successful',
-    };
-  }
-
-  async register(username: string, pass: string) {
-    const user = await this.usersService.create(username, pass);
-    return user;
-  }
-
-  async logout(req: any) {
-    req.session.destroy();
-    return {
-      message: 'Logout successful',
-    };
-  }
-}
-`;
-    filename = `auth.service.ts`;
-    await this.createFile(filename, authServiceContent, 'auth');
-  }
   async createCookiesService(): Promise<void> {
     let filename = ``;
     let authServiceContent = `
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcryptjs';
+import { MailerService } from '@nestjs-modules/mailer';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private readonly mailerService: MailerService,
+  ) {}
 
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
-    if (user && user.password === pass) {
+  async validateUserById(
+    id: number,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
+    const user = await this.usersService.findOne(id);
+    if (
+      user &&
+      typeof user !== 'string' &&
+      (await bcrypt.compare(pass, user.password))
+    ) {
       const { password, ...result } = user;
       return result;
     }
     return null;
   }
 
-  async login(req: any, user: any) {
-    req.res.cookie('userId', user.id, { httpOnly: true });
-    return {
-      message: 'Login successful',
-    };
+  async validateUserByEmail(
+    email: string,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (
+      user &&
+      typeof user !== 'string' &&
+      (await bcrypt.compare(pass, user.password))
+    ) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
   }
 
-  async register(username: string, pass: string) {
-    const user = await this.usersService.create(username, pass);
-    return user;
+  async register(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const user = await this.usersService.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+    const { password, ...result } = user;
+    return result;
   }
 
-  async logout(req: any) {
-    req.res.clearCookie('userId');
-    return {
-      message: 'Logout successful',
-    };
+  async requestPasswordReset(email: string) {
+    const user = this.usersService.findAll().find((u) => u.email === email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const resetLink = 'http://yourfrontend.com/reset-password?email=' + email;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Password Reset Request',
+      text:
+        'You requested a password reset. Click here to reset your password: ' +
+        resetLink,
+      html:
+        '<p>You requested a password reset. Click here to reset your password: <a href="' +
+        resetLink +
+        '">' +
+        resetLink +
+        '</a></p>',
+    });
+
+    return { message: 'Password reset link sent' };
+  }
+
+  async resetPassword(email: string, newPassword: string) {
+    const user = this.usersService.findAll().find((u) => u.email === email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.update(user.id, { password: hashedPassword });
+
+    return { message: 'Password reset successfully' };
+  }
+
+  async findUserById(userId: number) {
+    return this.usersService.findOne(userId);
   }
 }
 `;
@@ -338,6 +366,40 @@ export class AuthService {
   }
 
   async createAuthModule(): Promise<void> {
+    let mailerModuleContent = `import { Module } from '@nestjs/common';
+import { MailerModule as NestMailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+
+@Module({
+  imports: [
+    NestMailerModule.forRoot({
+      transport: {
+        host: 'smtp.example.com',
+        port: 587,
+        auth: {
+          user: 'user@example.com',
+          pass: 'password',
+        },
+      },
+      defaults: {
+        from: '"No Reply" <noreply@example.com>',
+      },
+      template: {
+        dir: join(__dirname, 'templates'),
+        adapter: new HandlebarsAdapter(),
+        options: {
+          strict: true,
+        },
+      },
+    }),
+  ],
+  exports: [NestMailerModule],
+})
+export class MailerModule {}
+    `;
+    let filename = `mailer.module.ts`;
+    await this.createFile(filename, mailerModuleContent, 'mailer');
     let authModuleContent = `import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
@@ -352,8 +414,103 @@ import { PassportModule } from '@nestjs/passport';
 })
 export class AuthModule {}
 `;
-    const filename = `auth.module.ts`;
+    filename = `auth.module.ts`;
     await this.createFile(filename, authModuleContent, 'auth');
+
+    let authServiceContent = `/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+import * as bcrypt from 'bcryptjs';
+import { MailerService } from '@nestjs-modules/mailer';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private readonly mailerService: MailerService,
+  ) {}
+
+  async register(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const user = await this.usersService.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const resetLink = 'http://yourfrontend.com/reset-password?email=' + email;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Password Reset Request',
+       text:
+        'You requested a password reset. Click here to reset your password: ' +
+        resetLink,
+      html:
+        '<p>You requested a password reset. Click here to reset your password: <a href="' +
+        resetLink +
+        '">' +
+        resetLink +
+        '</a></p>',
+    });
+
+    return { message: 'Password reset link sent' };
+  }
+
+  async resetPassword(email: string, newPassword: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.update(user.id, { password: hashedPassword });
+
+    return { message: 'Password reset successfully' };
+  }
+}`;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent, 'auth');
+
+    const authControllerContent = `/* eslint-disable prettier/prettier */
+import { Controller, Post, Body } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
+  }
+
+  @Post('request-password-reset')
+  async requestPasswordReset(@Body('email') email: string) {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body('email') email: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return this.authService.resetPassword(email, newPassword);
+  }
+}
+`;
+    filename = `auth.controller.ts`;
+    await this.createFile(filename, authControllerContent, 'auth');
   }
   async createGoogleAuthStrategy(): Promise<void> {
     let filename = 'google.strategy.ts';
@@ -661,11 +818,11 @@ export class AuthController {
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
-import { LocalStrategy } from './local.strategy';
+
 
 @Module({
 imports:[JwtModule.register({ secret: process.env.JWT_SECRET||"2024",}),    UsersModule, PassportModule],
-providers:[JwtStrategy,    AuthService, LocalStrategy],
+providers:[JwtStrategy,    AuthService],
   exports: [AuthService],
   controllers:[AuthController]
 
@@ -674,6 +831,128 @@ export class AuthModule {}
 `;
     filename = `auth.module.ts`;
     await this.createFile(filename, authModuleContent, 'auth');
+    let authServiceContent = `
+/* eslint-disable prettier/prettier */
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
+import { MailerService } from '@nestjs-modules/mailer';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+    private readonly mailerService: MailerService,
+  ) {}
+
+  async validateUserById(
+    id: number,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
+    const user = await this.usersService.findOne(id);
+    if (
+      user &&
+      typeof user !== 'string' &&
+      (await bcrypt.compare(pass, user.password))
+    ) {
+      const { ...result } = user;
+      return result;
+    }
+    return null;
+  }
+
+  async validateUserByEmail(
+    email: string,
+    pass: string,
+  ): Promise<Omit<CreateUserDto, 'password'> | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (
+      user &&
+      typeof user !== 'string' &&
+      (await bcrypt.compare(pass, user.password))
+    ) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
+  }
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  async register(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const user = await this.usersService.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  async requestPasswordReset(email: string) {
+    const user = this.usersService.findAll().find((u) => u.email === email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const payload = { email: user.email, sub: user.id };
+    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+    const resetLink = 'http://yourfrontend.com/reset-password?token=' + token;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Password Reset Request',
+      text:
+        'You requested a password reset. Click here to reset your password: ' +
+        resetLink,
+      html:
+        '<p>You requested a password reset. Click here to reset your password: <a href="' +
+        resetLink +
+        '">' +
+        resetLink +
+        '</a></p>',
+    });
+
+    return { message: 'Password reset link sent' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    let payload: any;
+    try {
+      payload = this.jwtService.verify(token);
+    } catch (e) {
+      throw new Error('Invalid or expired token');
+    }
+
+    const user = this.usersService
+      .findAll()
+      .find((u) => u.email === payload.email);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.update(user.id, { password: hashedPassword });
+
+    return { message: 'Password reset successfully' };
+  }
+  async findUserById(userId: number) {
+    return this.usersService.findOne(userId);
+  }
+}
+`;
+    filename = `auth.service.ts`;
+    await this.createFile(filename, authServiceContent, 'auth');
   }
 
   async addSessionStrategy(): Promise<void> {
@@ -714,10 +993,11 @@ import { ProtectedService } from './protected.service';
   imports: [PassportModule],
   controllers: [ProtectedController],
   providers: [ProtectedService],
+  exports: [ProtectedService],
 })
 export class ProtectedModule {}`;
     filename = `protected.module.ts`;
-    this.createFile(filename, ProtectedModuleContent, 'auth/protected');
+    this.createFile(filename, ProtectedModuleContent, 'protected');
     let ProtectedControllerContent = `import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProtectedService } from './protected.service';
@@ -735,7 +1015,7 @@ export class ProtectedController {
   }
 }`;
     filename = `protected.controller.ts`;
-    this.createFile(filename, ProtectedControllerContent, 'auth/protected');
+    this.createFile(filename, ProtectedControllerContent, 'protected');
     let ProtectedServiceContent = `import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -746,7 +1026,8 @@ export class ProtectedService {
   }
 }`;
     filename = `protected.service.ts`;
-    this.createFile(filename, ProtectedServiceContent, 'auth/protected');
+    this.createFile(filename, ProtectedServiceContent, 'protected');
+
     const mainTsContent = `
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -821,10 +1102,11 @@ import { ProtectedService } from './protected.service';
   imports: [PassportModule],
   controllers: [ProtectedController],
   providers: [ProtectedService],
+  exports: [ProtectedService],
 })
 export class ProtectedModule {}`;
     filename = `protected.module.ts`;
-    this.createFile(filename, ProtectedModuleContent, 'auth/protected');
+    this.createFile(filename, ProtectedModuleContent, 'protected');
     let ProtectedControllerContent = `import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProtectedService } from './protected.service';
@@ -842,7 +1124,7 @@ export class ProtectedController {
   }
 }`;
     filename = `protected.controller.ts`;
-    this.createFile(filename, ProtectedControllerContent, 'auth/protected');
+    this.createFile(filename, ProtectedControllerContent, 'protected');
     let ProtectedServiceContent = `import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -853,7 +1135,8 @@ export class ProtectedService {
   }
 }`;
     filename = `protected.service.ts`;
-    this.createFile(filename, ProtectedServiceContent, 'auth/protected');
+    this.createFile(filename, ProtectedServiceContent, 'protected');
+
     const mainTsContent = `
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
