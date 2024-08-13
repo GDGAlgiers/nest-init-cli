@@ -352,6 +352,14 @@ Implement stateless authentication using JWTs, which are compact tokens verified
 
 Supports session-based authentication for managing server-side session states, ideal for applications requiring stateful interactions with clients.
 
+# Contributors
+- [Rayan Allali](https://github.com/Rayan-Allali)
+- [Nabil Ghemam Djeridi](https://github.com/066516)
+- [Wissal Messikh](https://github.com/wissalcodes)
+- [Abderrahman Ben Rabah](https://github.com/ViNoS-ab)
+- [Abdelghani Derdouche](https://github.com/Ninou01)
+- [Ayyoub Kasmi](https://github.com/Ayyoub-Kasmi)
+
 # Join our Community
 
 Join us in the GDG Algiers' Community Discord <a href="https://discord.com/invite/7EvsP7eemQ">here</a> and feel free to ask any questions you may have.
@@ -382,4 +390,4 @@ Project Link: [https://github.com/GDGAlgiers/nest-init](https://github.com/GDGAl
 [issues-shield]: https://img.shields.io/github/issues2.0/GDGAlgiers/nest-init.svg?style=for-the-badge
 [issues-url]: https://github.com/GDGAlgiers/nest-init/issues
 [license-shield]: https://img.shields.io/github/license/GDGAlgiers/nest-init.svg?style=for-the-badge
-[license-url]: https://github.com/GDGAlgiers/nest-init/blob/master/LICENSE.txt
+[license-url]: https://github.com/GDGAlgiers/nest-init/blob/master/LICENSE.md
