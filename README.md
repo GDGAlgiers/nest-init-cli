@@ -84,7 +84,7 @@ To get started with Nest-Init, ensure you have <a href="https://nodejs.org/en/do
 - In order to use Nest-Init within your NestJS project, install the package globally using the command:
 
   ```bash
-  npm install -g nest-init
+  npm install -g nest-init-cli
   ```
 
 - Once it is installed, follow the prompts to start configuring your project.
